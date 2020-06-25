@@ -50,6 +50,10 @@ enum Gantry {
   Gantry1
 };
 
+// Adding a struct for the mPMT waveforms.
+// struct MPMTChannel {
+//   int 
+// };
 
 struct PMTChannel {
   int pmt;
@@ -78,6 +82,27 @@ namespace Private {
     TBranch*       branchY{nullptr};
     TBranch*       branchZ{nullptr};
   };
+
+  //**********************
+  //Adding a construct for mPMT branches.
+  struct MultiPMTset {
+    TBranch* waveform0{nullptr};
+    TBranch* waveform1{nullptr};
+    TBranch* waveform2{nullptr};
+    TBranch* waveform3{nullptr};
+    TBranch* waveform4{nullptr};
+    TBranch* waveform5{nullptr};
+  };
+
+  struct MultiPmtReading {
+    double* wvfm0[10000][1000];
+    double* wvfm1[10000][1000];
+    double* wvfm2[10000][1000];
+    double* wvfm3[10000][1000];
+    double* wvfm4[10000][1000];
+    double* wvfm5[10000][1000];
+  };
+  //**********************
 }
 
 
@@ -144,7 +169,11 @@ private:
   // data
   std::unordered_map<int, Private::PMTSet*>     pmtData;
   std::unordered_map<int, Private::PhidgetSet*> phidgetData;
-  
+  //**********************
+  //Adding mPMT data variable:
+  std::unordered_map<int, Private::MultiPMTset*> multiPMTData;
+  //**********************
+
   GantryPos g0;
   GantryPos g1;
   unsigned long long    numEntries;
@@ -155,6 +184,11 @@ private:
   // Gets the data pointer for the specified pmt
   // Returns nullptr if not found
   double* getDataForPmt(int pmt) const;
+
+  // *********************
+  // Adding a function to retrive mPMT waveform
+  double* getDataForMultiPmt() const;
+  // *********************
 
   // Sets the pointers in the tree to the newly opened tree
   // Returns false on failure, true on success

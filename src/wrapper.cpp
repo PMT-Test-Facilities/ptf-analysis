@@ -20,6 +20,7 @@ Wrapper::Wrapper(unsigned long long maxSamples, unsigned long long sampleSize, c
     PhidgetSet* pSet = new PhidgetSet();
     phidgetData[phidget] = pSet;
   }
+
 }
 
 
@@ -56,6 +57,12 @@ Wrapper::~Wrapper() {
 
 /* Private functions */
 
+//***********************
+// Add a function to retrieve the waveform information.
+// double* Wrapper::getDataForMultiPmt() const {
+//   return mpmtreading->wvfm0;
+// }
+//***********************
 
 double* Wrapper::getDataForPmt(int pmt) const {
   // Could be replaced with binary search, but probably list is small enough to not matter
@@ -73,7 +80,33 @@ double* Wrapper::getDataForPmt(int pmt) const {
 bool Wrapper::setDataPointers() {
   if (tree == nullptr || file == nullptr)
     return false;
-  
+
+  //******************
+  // Set mPMT branches
+  MultiPMTset* mpmtset = new MultiPMTset();
+  MultiPmtReading* mpmtreading = new MultiPmtReading();
+  mpmtset->waveform0 = nullptr;
+  mpmtset->waveform1 = nullptr;
+  mpmtset->waveform2 = nullptr;
+  mpmtset->waveform3 = nullptr;
+  mpmtset->waveform4 = nullptr;
+  mpmtset->waveform5 = nullptr;
+  mpmtset->waveform0 = tree->GetBranch("V1730_wave0");
+  mpmtset->waveform1 = tree->GetBranch("V1730_wave1");
+  mpmtset->waveform2 = tree->GetBranch("V1730_wave2");
+  mpmtset->waveform3 = tree->GetBranch("V1730_wave3");
+  mpmtset->waveform4 = tree->GetBranch("V1730_wave4");
+  mpmtset->waveform5 = tree->GetBranch("V1730_wave5");
+  mpmtset->waveform0->SetAddress(&mpmtreading->wvfm0);
+  mpmtset->waveform0->SetAddress(&mpmtreading->wvfm1);
+  mpmtset->waveform0->SetAddress(&mpmtreading->wvfm2);
+  mpmtset->waveform0->SetAddress(&mpmtreading->wvfm3);
+  mpmtset->waveform0->SetAddress(&mpmtreading->wvfm4);
+  mpmtset->waveform0->SetAddress(&mpmtreading->wvfm5);
+
+  cout<<mpmtreading->wvfm0[0][1]<<endl;
+  //******************
+
   // Set PMT branches
   char branchName[64];
   for (auto pmt : pmtData) {
@@ -132,6 +165,11 @@ bool Wrapper::setDataPointers() {
 
   brNumSamples->SetAddress(&numSamples);
 
+  //***********************
+  // Adding branches for the mPMT waveforms
+
+  //***********************
+
   return true;
 }
 
@@ -178,11 +216,13 @@ void Wrapper::openFile(const string& fileName, const string& treeName) {
 
   tree = nullptr;
   file->GetObject(treeName.c_str(), tree);
+  // tree->Print();
 
   if (!tree) {
     throw new Exceptions::InvalidTreeName(treeName);
   }
 
+  cout<<treeName<<endl;
   auto res = setDataPointers();
 
   if (!res) {
@@ -191,8 +231,11 @@ void Wrapper::openFile(const string& fileName, const string& treeName) {
 
   numEntries = tree->GetEntries();
 
+  cout << numEntries << endl;
   tree->GetEntry(0);
-  entry = 0;
+  // cout << "Opening root file." << endl;
+  // cout << tree->GetEntry(0)<<endl;
+  // entry = 0;
 }
 
 

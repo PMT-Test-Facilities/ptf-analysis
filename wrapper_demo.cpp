@@ -24,31 +24,32 @@ int main(void) {
   );
 
   // now we can open our file
-  wrapper.openFile("/path/to/file.root");
+  wrapper.openFile("~/Programs/mPMT-analysis/output00000240-mpmt.root");
+  // wra
 
-  cout << "There are " << wrapper.getNumEntries() << " entries." << endl;
+  // cout << "There are " << wrapper.getNumEntries() << " entries." << endl;
 
   // we can iterate over all the entries
 
-  for (size_t i = 0; i < wrapper.getNumEntries(); i++) {
-    wrapper.setCurrentEntry(i);
+//   for (size_t i = 0; i < wrapper.getNumEntries(); i++) {
+//     wrapper.setCurrentEntry(i);
 
-    // get data from phidget 3
-    PhidgetReading phidgetReading = wrapper.getReadingForPhidget(3);
+//     // get data from phidget 3
+//     PhidgetReading phidgetReading = wrapper.getReadingForPhidget(3);
 
-    // get data from gantry 1
-    GantryPos gantryData = wrapper.getDataForCurrentEntry(PTF::Gantry1);
+//     // get data from gantry 1
+//     GantryPos gantryData = wrapper.getDataForCurrentEntry(PTF::Gantry1);
 
-    // see how many samples there are for the current entry
-    auto numSamples = wrapper.getNumSamples();
+//     // see how many samples there are for the current entry
+//     auto numSamples = wrapper.getNumSamples();
 
-    for (size_t sample = 0; sample < numSamples; sample++) {
-      // Gets a pointer to the data for PMT 1 for this sample
-      // It's an array with the length of one sample, set above, in this case 34.
-      double* data = getPmtSample(1, sample);
-      // do something with data
-    }
-  }
-
+//     for (size_t sample = 0; sample < numSamples; sample++) {
+//       // Gets a pointer to the data for PMT 1 for this sample
+//       // It's an array with the length of one sample, set above, in this case 34.
+//       double* data = getPmtSample(1, sample);
+//       // do something with data
+//     }
+//   }
+  return 0;
   // wrapper is automatically deallocated when it goes out of scope here, and its destructor cleans up memory
 }
