@@ -165,11 +165,6 @@ bool Wrapper::setDataPointers() {
 
   brNumSamples->SetAddress(&numSamples);
 
-  //***********************
-  // Adding branches for the mPMT waveforms
-
-  //***********************
-
   return true;
 }
 
