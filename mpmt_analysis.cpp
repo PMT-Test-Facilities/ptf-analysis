@@ -59,6 +59,7 @@
 #include "TFitter.h"
 #include "TMath.h"
 #include "TStyle.h"
+#include "Configuration.hpp"
 
 using namespace std;
 
@@ -83,36 +84,48 @@ int main(int argc, char** argv) {
 
   // Set up PTF Wrapper
   vector<int> phidgets = {0, 1, 3};
-  PTF::PMT PMT0 = {0,0,PTF::mPMT_REV0_PMT}; // only looking at one pmt at a time
-  PTF::PMT PMT1 = {1,1,PTF::mPMT_REV0_PMT}; // only looking at one pmt at a time
-  vector<PTF::PMT> activePMTs = { PMT0, PMT1 }; // must be ordered {main,monitor}
   vector<PTF::Gantry> gantries = {PTF::Gantry0, PTF::Gantry1};
+
+  bool first_ch = true;
+  vector<PTF::PMT> activePMTs;
+
+  // Choose which channels to analyze.  Default is channels 0 and 1.
+  int first_channel = 0, last_channel = 1;
+  Configuration config;
+  
+  config.Load(string(argv[3]));
+  if(!config.Get("first_channel", first_channel) ){ first_channel = 0;};
+  if(!config.Get("last_channel", last_channel) ){ last_channel = 0;};
+  if(first_channel >= last_channel or first_channel < 0 or first_channel > 19
+     or last_channel < 0 or last_channel > 19){
+    std::cout << "Invalid choice of first and last channels: " << first_channel << " " << last_channel << std::endl;
+    exit(0);
+  }
+  std::cout << "Analyzing channels " << first_channel << " to " << last_channel << std::endl;
+
+  for(int ch = first_channel; ch < (last_channel+1); ch++){ // Loop over the channels you want to analyze    
+    PTF::PMT PMT = {ch,ch,PTF::mPMT_REV0_PMT};
+    activePMTs.push_back(PMT);
+  }
+  
   PTF::Wrapper wrapper = PTF::Wrapper(1, 1024, activePMTs, phidgets, gantries, PTF::mPMT_DIGITIZER);
   std::cout << "Open file: " << std::endl;
   wrapper.openFile( string(argv[1]), "scan_tree");
   cerr << "Num entries: " << wrapper.getNumEntries() << endl << endl;
 
-  // Determine error bars to use on waveforms
-  // Commented out for the time being because it causes a seg fault once PTFAnalysis tries to fit the first waveform
-  // Very strange behaviour!
-  // Spent ages trying to work out what was going wrong but never got to the bottom of it
-  //ErrorBarAnalysis * errbars0 = new ErrorBarAnalysis( outFile, wrapper, PMT0 );
+  for(int ch = first_channel; ch < (last_channel+1); ch++){ // Loop over the channels you want to analyze    
+    
+    // Do analysis of waveforms for each scanpoint
+    PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, activePMTs[ch-first_channel], string(argv[3]), true );
 
-  //std::cout << "Using errorbar size " << errbars0->get_errorbar() << std::endl;
-  
-  // Do analysis of waveforms for each scanpoint
-  PTFAnalysis *analysis0 = new PTFAnalysis( outFile, wrapper, 2.1e-3/*errbars0->get_errorbar()*/, PMT0, string(argv[3]), true );
-  analysis0->write_scanpoints();
+    if(first_ch){
+      analysis->write_scanpoints();
+      first_ch = false;
+    }
 
-  // Switch PMT to monitor PMT
-  
-  // Do analysis of waveforms for each scanpoint
-  PTFAnalysis *analysis1 = new PTFAnalysis( outFile, wrapper, 2.1e-3/*errbars1->get_errorbar()*/, PMT1, string(argv[3]), true );
-  
-  // Do quantum efficiency analysis
-  // This is now also done in a separate analysis script (including temperature corrections)
-  //PTFQEAnalysis *qeanalysis = new PTFQEAnalysis( outFile, analysis0, analysis1 );
-
+    std::cout << std::endl << "Finished channel " << ch << std::endl;  
+  }
+    
   outFile->Write();
   outFile->Close();
     
