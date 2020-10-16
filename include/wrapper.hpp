@@ -45,6 +45,13 @@
 
 namespace PTF {
 
+struct brbReadings {
+  int channelMask;        // "channel_mask/Int_t"
+  double baseline[20];    // "CalcBaseline[20]/Double_t"
+  double hvSetPoints[20]; // "HVsetpoints[20]/Double_t"
+  double hvReadback[20];  // "HVreadback[20]/Double_t"
+  double hvCurrent[20];   // "HVcurrent[20]/Double_t"
+};
 
 enum Gantry {
   Gantry0 = 0,
@@ -140,6 +147,9 @@ public:
   // Closes the currently open file and deletes the tree.
   // Does nothing if the file is already closed 
   void closeFile();
+
+  // Open settings tree and return a struct
+  PTF::brbReadings GetSettings(const std::string& fileName, const std::string& treeName);
 
   // Returns -1 on not found
   int getChannelForPmt(int pmt) const;
