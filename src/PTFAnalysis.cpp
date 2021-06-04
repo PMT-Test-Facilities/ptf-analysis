@@ -723,6 +723,16 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
       hwaveform->Scale(digi.fullScaleRange/digiCounts);
       InitializeFitResult( j, numWaveforms );
       
+        // ADDED FOR DARK NOISE CALCULATION: find pedestal
+        if (pmt.type==PTF::mPMT_REV0_PMT) {
+            float ped=0;
+            for (int i=1; i<=200; i++) {
+                ped+= hwaveform->GetBinContent(i);
+            }
+            ped = ped/200;
+            fitresult->qped = ped;
+        }
+        
       // Do pulse finding (if requested)
       if(do_pulse_finding){
         find_pulses(0, hwaveform, fitresult, pmt);
