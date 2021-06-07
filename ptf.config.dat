@@ -14,3 +14,8 @@ terminal_output = false
 # Considerably speeds up analysis
 pulse_location_cut = true
 fft_cut = true
+
+do_pulse_finding = true
+do_pulse_fitting = true
+
+
