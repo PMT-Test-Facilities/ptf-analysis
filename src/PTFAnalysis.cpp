@@ -661,10 +661,6 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
   // Loop over scan points (index i)
   unsigned long long nfilled = 0;// number of TTree entries so far
   for (unsigned i = 2; i < wrapper.getNumEntries(); i++) {
-	 if( config.Get("do_pulse_finding", do_pulse_finding) ){// Have to restate it here I don't know why
-	       //cout << "Disabling  pulse finding." <<do_pulse_finding << std::endl;                                                                                                                                                                  
-	       dofit = true;
-	     }
     //if ( i>2000 ) continue;
     if( terminal_output ){
       cerr << "PTFAnalysis scan point " << i << " / " << wrapper.getNumEntries() << "\u001b[34;1m (" << (((double)i)/wrapper.getNumEntries()*100) << "%)\u001b[0m\033[K";
