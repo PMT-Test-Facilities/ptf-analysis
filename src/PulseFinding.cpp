@@ -32,7 +32,7 @@ void simple_threshold_technique(TH1D *hwaveform, WaveformFitResult *fitresult, P
 //  if(pmt.channel == 17){ baseline = 0.9932; }
 
   double baseline = fitresult->qped;
-    double threshold = baseline - 0.0004883*4;//0.0004883*9;
+    double threshold = baseline - 0.0004883*10;
 
   int nsamples = hwaveform->GetNbinsX();
 
