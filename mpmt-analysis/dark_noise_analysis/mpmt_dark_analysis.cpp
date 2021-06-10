@@ -24,8 +24,6 @@ using namespace std;
 
 const double bin_unit = 0.4883;
 
-//int x=0;
-
 int main( int argc, char* argv[] ) {
 
     if ( argc != 2 ){
@@ -36,9 +34,7 @@ int main( int argc, char* argv[] ) {
     TFile * fin = new TFile( argv[1], "read" );
     
     // Set up canvas
-    Double_t w = 800;
-    Double_t h = 600;
-    TCanvas *c1 = new TCanvas("c1", "c1", w, h);
+    TCanvas *c1 = new TCanvas("c1", "c1", 800, 600);
     TLegend *legend = new TLegend(0.5,0.1,1.0,0.9);
     legend->SetHeader("Legend","C");
     int color[16]={0,0,0,0,1,920,632,416,600,400,616,432,800,820,880,860};
@@ -46,134 +42,101 @@ int main( int argc, char* argv[] ) {
     // Init other histograms
     TH1F *dark_time = new TH1F("dark-time", "Dark noise pulse times across all channel",1024,0,8192); //1024
     TH1F *dark_pulses = new TH1F("dark-pulses", "Dar noise pulses per waveform across all channels",10,2,12);
-    
-//    int times[16][713371];
-//    int concurrent_ch[50000];
-//    int concurrent_i[50000];
-    
-//    int pulses_scatter[16][713371];
-//    int channels_scatter[320000];
-    
-    // For channels 4-15, view pulse height
-    for (int j=6; j<=17; j++) {      //6--17
-        int ch;
-        if (j>15) {
-            ch = j-12;
-        } else {
-            ch = j;
-        }
-                
+
+    // Set up for scatter plot
+    int n=0;
+    int num_pulses[320000];
+    int num_channels[320000]={0};
+
+    // Set up WaveformFitResult and histograms for channels 4-15
+    TTree* tt[16];
+    WaveformFitResult* wf[16];
+    TH1F* ph[16];
+    for (int ch=4; ch<=15; ch++) {
         string filename = "ptfanalysis"+to_string(ch);
-        TTree * tt = (TTree*)fin->Get(filename.c_str());
-        WaveformFitResult * wf = new WaveformFitResult;
-        if(tt) wf->SetBranchAddresses(tt);
-        
-        // Initiliaze histogram
-        TH1F *ph = new TH1F("dark-ph", "Dark noise pulse heights", 130,0,bin_unit*130);
-        if (ch==6) {
-            ph->GetXaxis()->SetTitle("Pulse height (mV)");
-            ph->GetYaxis()->SetTitle("Number of events");
+        tt[ch] = (TTree*)fin->Get(filename.c_str());
+        wf[ch] = new WaveformFitResult;
+        if(tt[ch]) wf[ch]->SetBranchAddresses(tt[ch]);
+        string hist_name = "dark-ph-" + to_string(ch);
+        ph[ch] = new TH1F(hist_name.c_str(), "Dark noise pulse heights", 130,0,bin_unit*130);
+        if (ch==4) {
+            ph[ch]->GetXaxis()->SetTitle("Pulse height (mV)");
+            ph[ch]->GetYaxis()->SetTitle("Number of events");
         }
-        
-//        int n=0;
-        int num_pulses = 0;
-        // For each waveform
-//        cout<<tt->GetEntries()-1<<endl;
-        for(int i = 0; i < tt->GetEntries()-1; i++){
-            tt->GetEvent(i);
-            bool pulse_detected = false;
-            int wf_pulses = 0;
-            
+    }
+
+    // Init dark rate calculation variabels
+    int num_dark_pulses[16]={0};
+    int dark_rates[16];
+
+    for (int i=0; i<tt[4]->GetEntries()-1; i++) {
+        for (int j=4; j<=15; j++) {
+            tt[j]->GetEvent(i);             // get waveform
+            int wf_pulses[16]={0};          // set up num pulses per waveform
+
             // For each pulse
-            for (int k=0; k<wf->numPulses; k++) {
-                
-                // Collect pulse heights
-                if (!pulse_detected) {
-                    ph->Fill(wf->pulseCharges[k]*1000.0);
-                    num_pulses++;
-                    pulse_detected = true;
-                    
+            for (int k=0; k<wf[j]->numPulses; k++) {
+                // Collect pulse height and number of pulses in waveform
+                if (wf_pulses[j]==0) {
+                    ph[j]->Fill(wf[j]->pulseCharges[k]*1000.0);
+                    num_dark_pulses[j]++;
                 }
-                
-                // Collect pulse times
-                if (wf->pulseTimes[k]<8150 && wf->pulseTimes[k]>50) dark_time->Fill(wf->pulseTimes[k]);
-                wf_pulses++;
-                
+                wf_pulses[j]++;
+                // Collect pulse time
+                if (wf[j]->pulseTimes[k]<8150 && wf[j]->pulseTimes[k]>50) dark_time->Fill(wf[j]->pulseTimes[k]);
+                // Collect number of pulses per waveform
+                dark_pulses->Fill(wf_pulses[j]);
             }
-            
-            // Collect number of pulses per waveform
-            dark_pulses->Fill(wf_pulses);
-//            pulses_scatter[ch][i]=wf_pulses;
-//            n++;
-            
-            
-            
-////             Collect event with dark pulse
-//            if(pulse_detected) {
-////                concurrent_ch[n]=ch;
-////                concurrent_i[n]=i;
-//                n++;
-//            }
+
+            // Check occurance of dark pulses across different channels
+            if (wf_pulses[j]!=0) {
+                num_pulses[n]=wf_pulses[j];
+                cout<<"x: "<< num_pulses[n]<<endl;
+                for (int c=4; c<=15; c++) {
+                    if (wf_pulses[c]==wf_pulses[j]) num_channels[n]++;
+                }
+                cout<<"y: "<< num_channels <<endl;
+                n++;
+            }
         }
-//
-//        x+=num_pulses;
-//        cout<<"pulses in each channel: " << x<<endl;
-        
-        // Calculate dark noise rate
-        int time = tt->GetEntries() * 8192 * pow(10,-9); //[seconds]
-        int dark_rate = num_pulses/time; //[pulses/second]
-        
-        // Draw pulse height hist
-        ph->SetLineColor(color[ch]);
-        ph->Draw("][sames");
-        ph->Fit("gaus","0Q","C",5,14);
-        TF1 *fit = (TF1*)ph->GetListOfFunctions()->FindObject("gaus");
-        double mean = fit->GetParameter(1);
-        string legendname = "Chan" + to_string(ch) + " dark rate: " + to_string(dark_rate) + " pulses/sec. Mean: " + to_string(mean).substr(0, 4);
-        legend->AddEntry(ph,legendname.c_str(),"l");
     }
     
+    for (int y=6; y<=17; y++) {
+        int ch;
+        if (y>15) {
+            ch = y-12;
+        } else {
+            ch = y;
+        }
+
+        // Calculate dark noise rate
+        int time = tt[4]->GetEntries() * 8192 * pow(10,-9); //[seconds]
+        dark_rates[ch] = num_dark_pulses[ch]/time; //[pulses/second]
+
+        // Draw pulse height hist
+        ph[ch]->SetLineColor(color[ch]);
+        ph[ch]->Draw("][sames");
+        // cout<<"channel: "<<y<<", line: 121"<<endl;
+        ph[ch]->Fit("gaus","0Q","C",5,14);
+        TF1 *fit = (TF1*)ph[ch]->GetListOfFunctions()->FindObject("gaus");
+        double mean = fit->GetParameter(1);
+        string legendname = "Chan" + to_string(ch) + " dark rate: " + to_string(dark_rates[ch]) + " pulses/sec. Mean: " + to_string(mean).substr(0, 4);
+        legend->AddEntry(ph[ch],legendname.c_str(),"l");
+        
+    }
+
     legend->Draw();
     c1->SaveAs("mpmt_dark_noise_ph.png");
     
     TCanvas *c2 = new TCanvas("C2");
-    dark_time->Draw();
-    dark_time->GetXaxis()->SetTitle("Pulse time (ns)");
-    dark_time->GetYaxis()->SetTitle("Number of events");
-    dark_time->Fit("pol1");
-    c2->SaveAs("mpmt_dark_noise_time.png");
-    
-    TCanvas *c3 = new TCanvas("C3");
-    dark_pulses->Draw();
-    dark_pulses->GetXaxis()->SetTitle("Num pulses per waveform");
-    dark_pulses->GetYaxis()->SetTitle("Number of events");
-//    dark_pulses->Print("all");
-    c3->SaveAs("mpmt_dark_noise_pulses.png");
-    
-//    // Calculate frequency of dark pulse occuring at same time across multiple channels
-//    for (c=4; c<=15; c++) {
-//        for (e=0; e<713371; e++) {
-//            int target = times[c][e];
-//            for (ci=4; ci<=15; ci++) {
-//                if (times[ci][e]==target) concurrent_pulses++;
-//            }
-//        }
-//    }
-    
-//    cout<<"Frequency of dark pulse occuring at same time across multiple channels"<< concurrent_pulses/713371<<endl;
-    
-    
-//    w=1000;
-//    h=1500;
-//    TCanvas *c4 = new TCanvas("C4","C4",w,h);
-//    TGraph *concurrent_pulses = new TGraph(n,concurrent_ch,concurrent_i);
-//    concurrent_pulses->SetTitle("Dark noise occurance across channels");
-////    concurrent_pulses->GetXaxis()->SetRangeUser(3,16);
-////    concurrent_pulses->GetYaxis()->SetRangeUser(0,713371);
-//    concurrent_pulses->GetXaxis()->SetTitle("Channel");
-//    concurrent_pulses->GetYaxis()->SetTitle("Pulse event");
-//    concurrent_pulses->Draw("ap");
-//    c4->SaveAs("mpmt_concurrent_pulses.png");
+    TGraph *concurrent_pulses = new TGraph(n,num_pulses,num_channels);
+    concurrent_pulses->SetTitle("Dark noise occurance across channels");
+    concurrent_pulses->GetXaxis()->SetRangeUser(3,16);
+    concurrent_pulses->GetYaxis()->SetRangeUser(0,713371);
+    concurrent_pulses->GetXaxis()->SetTitle("Num pulses in event");
+    concurrent_pulses->GetYaxis()->SetTitle("Num channels with pulse");
+    concurrent_pulses->Draw("ap");
+    c2->SaveAs("mpmt_concurrent_pulses.png");
     
     fin->Close();
     return 0;
