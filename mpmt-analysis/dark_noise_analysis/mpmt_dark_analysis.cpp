@@ -44,6 +44,8 @@ int main( int argc, char* argv[] ) {
     TH1F *dark_pulses = new TH1F("dark-pulses", "Dark noise pulses per waveform across all channels",10,2,12);
     TH2F *concurrent_hist = new TH2F("concurrent-pulses", "2D Hist of dark noise occurance across channels",11,0,11,12,0,12);
 
+    TH1F *dark_chan = new TH1F("dark_chan","Num channels with concurrent pulses",11,0,11);
+
     // Set up for scatter plot
     int n=0;
     int num_pulses[320000];
@@ -106,6 +108,7 @@ int main( int argc, char* argv[] ) {
                     }
                 }
                 concurrent_hist->Fill(num_pulses[n],num_channels[n]);
+                dark_chan->Fill(num_channels[n]);
                 if (i==80154) cout<<"chan"<<j<<": "<<wf_pulses[j]<<"pulses, "<<num_channels[n]<<" channels, pulse time: "<<wf[j]->pulseTimes[0]<<endl;
                 n++;
             }
@@ -154,7 +157,20 @@ int main( int argc, char* argv[] ) {
     concurrent_hist->GetYaxis()->SetTitle("Num channels with pulse");
     concurrent_hist->Draw("COLZ");
     c3->SaveAs("mpmt_concurrent_hist.png");
+
+    TCanvas *c4 = new TCanvas("C4");
+    dark_time->Draw();
+    dark_time->GetXaxis()->SetTitle("Pulse time (ns)");
+    dark_time->GetYaxis()->SetTitle("Number of events");
+    dark_time->Fit("pol1");
+    c4->SaveAs("mpmt_dark_noise_time.png");
     
+    TCanvas *c5 = new TCanvas("C5");
+    dark_chan->Draw();
+    dark_chan->GetXaxis()->SetTitle("Num channels with concurrent pulses");
+    dark_chan->GetYaxis()->SetTitle("Number of events");
+    c5->SaveAs("mpmt_concurrent_channels".png");
+
     fin->Close();
     return 0;
 }
