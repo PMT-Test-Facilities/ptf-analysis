@@ -29,8 +29,7 @@ void simple_threshold_technique(TH1D *hwaveform, WaveformFitResult *fitresult, P
   if(pmt.type == PTF::mPMT_REV0_PMT){
     baseline = BrbSettingsTree::Get()->GetBaseline(pmt.channel);
   }
-  
-  double threshold = baseline - 0.004;
+  double threshold = baseline - 0.004883;
 
   int nsamples = hwaveform->GetNbinsX();
 

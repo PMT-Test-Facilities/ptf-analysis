@@ -41,7 +41,7 @@ int main( int argc, char* argv[] ) {
     
     // Init other histograms
     TH1F *dark_time = new TH1F("dark-time", "Dark noise pulse times across all channel",1024,0,8192); //1024
-    TH1F *dark_pulses = new TH1F("dark-pulses", "Dark noise pulses per waveform across all channels",10,2,12);
+    TH1F *dark_pulses = new TH1F("dark-pulses", "Dark noise pulses per waveform across all channels",13,0,12);
     TH2F *concurrent_hist = new TH2F("concurrent-pulses", "2D Hist of dark noise occurance across channels",11,0,11,12,0,12);
 
     TH1F *dark_chan = new TH1F("dark_chan","Num channels with concurrent pulses",11,0,11);
@@ -62,10 +62,6 @@ int main( int argc, char* argv[] ) {
         if(tt[ch]) wf[ch]->SetBranchAddresses(tt[ch]);
         string hist_name = "dark-ph-" + to_string(ch);
         ph[ch] = new TH1F(hist_name.c_str(), "Dark noise pulse heights", 130,0,bin_unit*130);
-        if (ch==4) {
-            ph[ch]->GetXaxis()->SetTitle("Pulse height (mV)");
-            ph[ch]->GetYaxis()->SetTitle("Number of events");
-        }
     }
 
     // Init dark rate calculation variabels
@@ -89,7 +85,10 @@ int main( int argc, char* argv[] ) {
                 }
                 wf_pulses[j]++;
                 // Collect pulse time
-                if (wf[j]->pulseTimes[k]<8150 && wf[j]->pulseTimes[k]>50) dark_time->Fill(wf[j]->pulseTimes[k]);
+                if (wf[j]->pulseTimes[k]<8150 && wf[j]->pulseTimes[k]>50) {
+                    // if (wf[j]->pulseTimes[0]>1700) 
+                    dark_time->Fill(wf[j]->pulseTimes[k]);
+                }
                 // Collect number of pulses per waveform
                 dark_pulses->Fill(wf_pulses[j]);
             }
@@ -100,7 +99,7 @@ int main( int argc, char* argv[] ) {
             if (wf_pulses[j]!=0) {
                 num_pulses[n]=wf_pulses[j];
                 for (int c=4; c<=15; c++) {
-                    if (wf_pulses[c]!=0){//==wf_pulses[j]) { 
+                    if (wf_pulses[c]==wf_pulses[j]) { //!=0){
                         if (wf[c]->pulseTimes[0]<=wf[j]->pulseTimes[0]+100 || wf[c]->pulseTimes[0]>=wf[j]->pulseTimes[0]-100) {
                             num_channels[n]++;
                             // if(num_channels[n]>1 && num_pulses[n]>1) cout<<i<<endl;
@@ -109,7 +108,7 @@ int main( int argc, char* argv[] ) {
                 }
                 concurrent_hist->Fill(num_pulses[n],num_channels[n]);
                 dark_chan->Fill(num_channels[n]);
-                if (i==80154) cout<<"chan"<<j<<": "<<wf_pulses[j]<<"pulses, "<<num_channels[n]<<" channels, pulse time: "<<wf[j]->pulseTimes[0]<<endl;
+                // if (i==80154) cout<<"chan"<<j<<": "<<wf_pulses[j]<<"pulses, "<<num_channels[n]<<" channels, pulse time: "<<wf[j]->pulseTimes[0]<<endl;
                 n++;
             }
         }
@@ -136,6 +135,8 @@ int main( int argc, char* argv[] ) {
         double mean = fit->GetParameter(1);
         string legendname = "Chan" + to_string(ch) + " dark rate: " + to_string(dark_rates[ch]) + " pulses/sec. Mean: " + to_string(mean).substr(0, 4);
         legend->AddEntry(ph[ch],legendname.c_str(),"l");
+        ph[ch]->GetXaxis()->SetTitle("Pulse height (mV)");
+        ph[ch]->GetYaxis()->SetTitle("Number of events");
         
     }
 
@@ -166,10 +167,18 @@ int main( int argc, char* argv[] ) {
     c4->SaveAs("mpmt_dark_noise_time.png");
     
     TCanvas *c5 = new TCanvas("C5");
+    gPad->SetLogy();
     dark_chan->Draw();
     dark_chan->GetXaxis()->SetTitle("Num channels with concurrent pulses");
     dark_chan->GetYaxis()->SetTitle("Number of events");
-    c5->SaveAs("mpmt_concurrent_channels".png");
+    c5->SaveAs("mpmt_concurrent_channels.png");
+
+    TCanvas *c6 = new TCanvas("C6");
+    dark_pulses->Draw();
+    dark_pulses->GetXaxis()->SetTitle("Num pulses per waveform");
+    dark_pulses->GetYaxis()->SetTitle("Number of events");
+    gPad->SetLogy();
+    c6->SaveAs("mpmt_dark_noise_pulses.png");
 
     fin->Close();
     return 0;
