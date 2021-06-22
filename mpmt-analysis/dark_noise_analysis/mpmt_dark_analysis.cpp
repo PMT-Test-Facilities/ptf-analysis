@@ -69,7 +69,9 @@ int main( int argc, char* argv[] ) {
     int dark_rates[16];
 
     // For each event:
+    
     for (int i=0; i<tt[4]->GetEntries()-1; i++) {
+        int count = 1;
         // Load pulse info for each channel
         int wf_pulses[16]={0};              // set up num pulses per waveform
         for (int j=4; j<=15; j++) {
@@ -98,17 +100,22 @@ int main( int argc, char* argv[] ) {
         for (int j=4; j<=15; j++) {           
             if (wf_pulses[j]!=0) {
                 num_pulses[n]=wf_pulses[j];
+                
                 for (int c=4; c<=15; c++) {
-                    if (wf_pulses[c]==wf_pulses[j]) { //!=0){
+                    if (wf_pulses[c]!=0){   //==wf_pulses[j]) { 
                         if (wf[c]->pulseTimes[0]<=wf[j]->pulseTimes[0]+100 || wf[c]->pulseTimes[0]>=wf[j]->pulseTimes[0]-100) {
                             num_channels[n]++;
-                            // if(num_channels[n]>1 && num_pulses[n]>1) cout<<i<<endl;
                         }
                     }
                 }
                 concurrent_hist->Fill(num_pulses[n],num_channels[n]);
                 dark_chan->Fill(num_channels[n]);
-                // if (i==80154) cout<<"chan"<<j<<": "<<wf_pulses[j]<<"pulses, "<<num_channels[n]<<" channels, pulse time: "<<wf[j]->pulseTimes[0]<<endl;
+                
+                if (num_channels[n]>5) {
+                    if (count==1) cout<<"Event num: " << i<<endl;
+                    count++;
+                    cout<<"chan"<<j<<": "<<wf_pulses[j]<<"pulses, "<<num_channels[n]<<" channels, pulse time: "<<wf[j]->pulseTimes[0]<<endl;
+                }
                 n++;
             }
         }
