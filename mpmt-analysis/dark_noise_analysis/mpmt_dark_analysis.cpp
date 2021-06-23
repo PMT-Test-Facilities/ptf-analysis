@@ -43,13 +43,15 @@ int main( int argc, char* argv[] ) {
     TH1F *dark_time = new TH1F("dark-time", "Dark noise pulse times across all channel",1024,0,8192); //1024
     TH1F *dark_pulses = new TH1F("dark-pulses", "Dark noise pulses per waveform across all channels",13,0,12);
     TH2F *concurrent_hist = new TH2F("concurrent-pulses", "2D Hist of dark noise occurance across channels",11,0,11,12,0,12);
-
     TH1F *dark_chan = new TH1F("dark_chan","Num channels with concurrent pulses",11,0,11);
+
+    TH1F* chan_light = new TH1F("chan_light","Channel light up histogram (for >5 concurrent pulses)",13,3,16);
 
     // Set up for scatter plot
     int n=0;
     int num_pulses[320000];
     int num_channels[320000]={0};
+    int channels[16]={0};
 
     // Set up WaveformFitResult and histograms for channels 4-15
     TTree* tt[16];
@@ -103,18 +105,22 @@ int main( int argc, char* argv[] ) {
                 
                 for (int c=4; c<=15; c++) {
                     if (wf_pulses[c]!=0){   //==wf_pulses[j]) { 
-                        if (wf[c]->pulseTimes[0]<=wf[j]->pulseTimes[0]+100 || wf[c]->pulseTimes[0]>=wf[j]->pulseTimes[0]-100) {
+                        if (wf[c]->pulseTimes[0]<=wf[j]->pulseTimes[0]+100 && wf[c]->pulseTimes[0]>=wf[j]->pulseTimes[0]-100) {
                             num_channels[n]++;
                         }
+                        // if (i==172) {
+                        //     cout << "chan" << c << ": " << wf[c]->pulseTimes[0] << ", j: " << c << ": " << wf[j]->pulseTimes[0] << endl;;
+                        // }
                     }
                 }
                 concurrent_hist->Fill(num_pulses[n],num_channels[n]);
                 dark_chan->Fill(num_channels[n]);
                 
-                if (num_channels[n]>5) {
-                    if (count==1) cout<<"Event num: " << i<<endl;
-                    count++;
-                    cout<<"chan"<<j<<": "<<wf_pulses[j]<<"pulses, "<<num_channels[n]<<" channels, pulse time: "<<wf[j]->pulseTimes[0]<<endl;
+                if (num_channels[n]>5) {//<=5 && num_channels[n]>1) {
+                    // if (count==1) cout<<"Event num: " << i<<endl;
+                    // count++;
+                    chan_light->Fill(j);
+                    // cout<<"chan"<<j<<": "<<wf_pulses[j]<<"pulses, "<<num_channels[n]<<" channels, pulse time: "<<wf[j]->pulseTimes[0]<<endl;
                 }
                 n++;
             }
@@ -132,6 +138,7 @@ int main( int argc, char* argv[] ) {
         // Calculate dark noise rate
         int time = tt[4]->GetEntries() * 8192 * pow(10,-9); //[seconds]
         dark_rates[ch] = num_dark_pulses[ch]/time; //[pulses/second]
+        channels[ch]=ch;
 
         // Draw pulse height hist
         ph[ch]->SetLineColor(color[ch]);
@@ -143,8 +150,7 @@ int main( int argc, char* argv[] ) {
         string legendname = "Chan" + to_string(ch) + " dark rate: " + to_string(dark_rates[ch]) + " pulses/sec. Mean: " + to_string(mean).substr(0, 4);
         legend->AddEntry(ph[ch],legendname.c_str(),"l");
         ph[ch]->GetXaxis()->SetTitle("Pulse height (mV)");
-        ph[ch]->GetYaxis()->SetTitle("Number of events");
-        
+        ph[ch]->GetYaxis()->SetTitle("Number of events");        
     }
 
     legend->Draw();
@@ -186,6 +192,23 @@ int main( int argc, char* argv[] ) {
     dark_pulses->GetYaxis()->SetTitle("Number of events");
     gPad->SetLogy();
     c6->SaveAs("mpmt_dark_noise_pulses.png");
+
+    TCanvas *c7 = new TCanvas("C7");
+    TGraph *chan_vs_dark = new TGraph(15,channels,dark_rates);
+    chan_vs_dark->GetXaxis()->SetRangeUser(0,15);
+    // chan_vs_dark->GetYaxis()->SetRangeUser(200,1000);
+    chan_vs_dark->GetXaxis()->SetTitle("Channel number");
+    chan_vs_dark->GetYaxis()->SetTitle("Dark rate");
+    chan_vs_dark->SetTitle("Dark rate according to channel");
+    chan_vs_dark->Draw("a*");
+    c7->SaveAs("dark_rate_channel.png");
+
+    TCanvas *c8 = new TCanvas("C8");
+    chan_light->Draw();
+    chan_light->GetXaxis()->SetTitle("Channel number");
+    chan_light->GetYaxis()->SetTitle("Number of events");
+    c8->SaveAs("channel_light.png");
+
 
     fin->Close();
     return 0;
