@@ -26,9 +26,17 @@ const double bin_unit = 0.4883;
 
 int main( int argc, char* argv[] ) {
 
-    if ( argc != 2 ){
+    if ( argc < 2 ){
         std::cerr<<"Usage: ptf_ttree_analysis.app ptf_analysis.root\n";
         exit(0);
+    }
+
+    int event_num = 0;
+    bool check_event = false;
+
+    if (argc == 3) {
+        check_event = true;
+        event_num = atoi(argv[2]);
     }
 
     TFile * fin = new TFile( argv[1], "read" );
@@ -72,23 +80,27 @@ int main( int argc, char* argv[] ) {
     int num_multi_hits=0;
     double multi_rate;
 
-    double testing[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    double multi_ch[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
     double pt[16];
+    double pulse_range[2] = {0,8192};
+    int counter = 0;
 
-
-
-    // For each event:    
+    // For each event:
     for (int i=0; i<tt[4]->GetEntries()-1; i++) {
         int wf_pulses[16]={0};              // Init array for num pulses per waveform
         // For each channel:
         for (int j=4; j<=15; j++) {
             tt[j]->GetEvent(i);             // get waveform
 
-            
             // For each pulse
             for (int k=0; k<wf[j]->numPulses; k++) {
                 
-                if (i==510940 && k==0) pt[j]=wf[j]->pulseTimes[k];
+                if (check_event && i==event_num && k==0) pt[j]=wf[j]->pulseTimes[k];
+                if (counter==0 && i==event_num) {
+                    pulse_range[0] = wf[j]->pulseTimes[k]-50;
+                    pulse_range[1] = wf[j]->pulseTimes[k]+50;
+                    counter++;
+                }
 
                 // Collect pulse height and num pulses per waveform
                 // Note: maximum of 1 pulse per waveform is counted (i.e. in the case of multiple consecutive pulses, count only one)
@@ -215,15 +227,20 @@ int main( int argc, char* argv[] ) {
     multi_pulses->GetYaxis()->SetTitle("Number of events");
     c8->SaveAs("mpmt_multi_hit_count.png");
 
-    TCanvas *c9 = new TCanvas("C9");
-    TGraph *test = new TGraph(15,testing,pt);
-    // test->GetXaxis()->SetRangeUser(0,15);
-    // test->GetXaxis()->SetTitle("Channel number");
-    test->GetYaxis()->SetTitle("Pulse times");
-    test->GetYaxis()->SetRangeUser(1250,1350);
-    // test->SetTitle("Dark noise rate according to channel");
-    test->Draw("a*");
-    c9->SaveAs("test.png");
+    if (check_event) {
+        TCanvas *c9 = new TCanvas("C9");
+        TGraph *multi_hit_time = new TGraph(16,multi_ch,pt);
+        multi_hit_time->GetXaxis()->SetTitle("Channel number");
+        multi_hit_time->GetYaxis()->SetTitle("Pulse times");
+        cout << pulse_range[0] <<", " << pulse_range[1] << endl;
+        // multi_hit_time->GetYaxis()->SetRangeUser(pulse_range[0],pulse_range[1]);
+        multi_hit_time->GetYaxis()->SetRangeUser(2000,2400);
+        string graph_title = "Multi-hit event " + to_string(event_num) + " pulse times according to channel";
+        multi_hit_time->SetTitle(graph_title.c_str());
+        multi_hit_time->Draw("a*");
+        string fname = "mpmt_multi_hits_" + to_string(event_num) + ".png";
+        c9->SaveAs(fname.c_str());
+    }
     
 
     fin->Close();
