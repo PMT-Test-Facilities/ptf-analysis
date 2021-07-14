@@ -232,9 +232,9 @@ int main( int argc, char* argv[] ) {
         TGraph *multi_hit_time = new TGraph(16,multi_ch,pt);
         multi_hit_time->GetXaxis()->SetTitle("Channel number");
         multi_hit_time->GetYaxis()->SetTitle("Pulse times");
-        cout << pulse_range[0] <<", " << pulse_range[1] << endl;
-        // multi_hit_time->GetYaxis()->SetRangeUser(pulse_range[0],pulse_range[1]);
-        multi_hit_time->GetYaxis()->SetRangeUser(2000,2400);
+        // cout << pulse_range[0] <<", " << pulse_range[1] << endl;
+        multi_hit_time->GetYaxis()->SetRangeUser(pulse_range[0],pulse_range[1]);
+        // multi_hit_time->GetYaxis()->SetRangeUser(2000,2400);
         string graph_title = "Multi-hit event " + to_string(event_num) + " pulse times according to channel";
         multi_hit_time->SetTitle(graph_title.c_str());
         multi_hit_time->Draw("a*");
