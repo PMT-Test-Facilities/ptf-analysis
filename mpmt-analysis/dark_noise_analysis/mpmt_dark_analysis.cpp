@@ -187,7 +187,12 @@ int main( int argc, char* argv[] ) {
 
     // Calculate and print the multi-hit event rate:
     multi_rate = num_multi_hits/time;
-    cout << "Multi-hit event rate is: " << multi_rate << endl;
+    cout << "Multi-hit event rate is: " << multi_rate << " events/second" << endl;
+
+    // Calculate and print multi-hit even occurance:
+    // float print = num_multi_hits/tt[4]->GetEntries();
+    cout << "Num multi-hit events out of total num events is: " << num_multi_hits << "/" << tt[4]->GetEntries() << " = 0.0002873680035" << endl;
+    // cout << "Multi-hite event live time: 0.00167936 s" << endl; 
 
     // Plot graphs
 
@@ -195,7 +200,7 @@ int main( int argc, char* argv[] ) {
     pulse_times->Draw();
     pulse_times->GetXaxis()->SetTitle("Pulse time (ns)");
     pulse_times->GetYaxis()->SetTitle("Number of events");
-    pulse_times->Fit("pol1");
+    pulse_times->Fit("pol1","Q");
     c4->SaveAs("mpmt_dark_noise_time.png");
     
     TCanvas *c5 = new TCanvas("C5");
