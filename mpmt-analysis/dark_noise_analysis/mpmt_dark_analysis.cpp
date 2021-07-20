@@ -2,22 +2,15 @@
 #include "ScanPoint.hpp"
 #include "TCanvas.h"
 #include "TFile.h"
-#include "TF1.h"
 #include "TH1D.h"
 #include "TH2F.h"
-#include "THStack.h"
 #include "TGraph.h"
 #include "TGaxis.h"
 #include "TF1.h"
-#include "TStyle.h"
-#include "TLatex.h"
 #include "TLegend.h"
-#include "TPaveStats.h"
-#include "TProfile.h"
 
 #include <math.h>
 #include <iostream>
-#include <vector>
 #include <string>
 #include <cstring>
 using namespace std;
@@ -26,14 +19,15 @@ const double bin_unit = 0.4883;
 
 int main( int argc, char* argv[] ) {
 
+    // Error message
     if ( argc < 2 ){
         std::cerr<<"Usage: ptf_ttree_analysis.app ptf_analysis.root\n";
         exit(0);
     }
 
+    // Take additional/optional argument for event number
     int event_num = 0;
     bool check_event = false;
-
     if (argc == 3) {
         check_event = true;
         event_num = atoi(argv[2]);
@@ -54,9 +48,8 @@ int main( int argc, char* argv[] ) {
     TH1F* multi_pulses = new TH1F("multi-hit","Number of pulses per channel for multiple hits (>2 simultaneous hits)",13,3,16);
 
     // Set up for scatter plots
-    int n=0;  //array indexing
-    int num_channels[320000]={0};
-    int channels[16]={0};
+    int n=0;                        // array indexing
+    int num_channels[320000]={0};   // can replace ??
 
     // Set up WaveformFitResults and dark pulse ph histograms for channels 4-15
     TTree* tt[16];
@@ -80,8 +73,8 @@ int main( int argc, char* argv[] ) {
     int num_multi_hits=0;
     double multi_rate;
 
-    double multi_ch[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-    double pt[16];
+    int chan[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    int pt[16];
     double pulse_range[2] = {0,8192};
     int counter = 0;
 
@@ -122,19 +115,18 @@ int main( int argc, char* argv[] ) {
                 pulse_count->Fill(wf_pulses[j]);
             }
         }
-            
-        int count = 1;                      // Init counter for multi-hit event rate
 
         // MULTIPLE-HIT EVENT RATE ANALYSIS
+        int count = 1;                      // Init counter for multi-hit event rate
         // For each channel:
         for (int j=4; j<=15; j++) {  
 
             // If channel j has a pulse, count the number of other channels also with a pulse occuring at a similar time
             if (wf_pulses[j]!=0) {
                 for (int c=4; c<=15; c++) {
-                    if (wf_pulses[c]==0) continue;          //alt condition for same num pulses: "==wf_pulses[j]) {" 
+                    if (wf_pulses[c]==0) continue;          //alt condition for same num pulses: "!=wf_pulses[j]) {" 
                     if (wf[c]->pulseTimes[0]<=wf[j]->pulseTimes[0]+100 && wf[c]->pulseTimes[0]>=wf[j]->pulseTimes[0]-100) {
-                        num_channels[n]++;      // Increase count for num channels with simulatenous hit
+                        num_channels[n]++;                  // Increase count for num channels with simulatenous hit
                     }
                     // if (i==172) cout << "chan" << c << ": " << wf[c]->pulseTimes[0] << ", j: " << c << ": " << wf[j]->pulseTimes[0] << endl;;
                 }
@@ -159,17 +151,12 @@ int main( int argc, char* argv[] ) {
     
     // Dark noise rate calculation and ROOT plotting
     for (int y=6; y<=17; y++) {
-        int ch;
-        if (y>15) {
-            ch = y-12;
-        } else {
-            ch = y;
-        }
+
+        int ch = (y>15) ? y-12 : y;
 
         // Calculate dark noise rate
-        time = tt[4]->GetEntries() * 8192 * pow(10,-9); //[seconds]
+        time = tt[ch]->GetEntries() * 8192 * pow(10,-9); //[seconds]
         dark_rates[ch] = num_dark_pulses[ch]/time; //[pulses/second]
-        channels[ch]=ch;
 
         // Draw pulse height hist
         ph[ch]->SetLineColor(color[ch]);
@@ -190,12 +177,9 @@ int main( int argc, char* argv[] ) {
     cout << "Multi-hit event rate is: " << multi_rate << " events/second" << endl;
 
     // Calculate and print multi-hit even occurance:
-    // float print = num_multi_hits/tt[4]->GetEntries();
     cout << "Num multi-hit events out of total num events is: " << num_multi_hits << "/" << tt[4]->GetEntries() << " = 0.0002873680035" << endl;
-    // cout << "Multi-hite event live time: 0.00167936 s" << endl; 
 
     // Plot graphs
-
     TCanvas *c4 = new TCanvas("C4");
     pulse_times->Draw();
     pulse_times->GetXaxis()->SetTitle("Pulse time (ns)");
@@ -218,7 +202,7 @@ int main( int argc, char* argv[] ) {
     c6->SaveAs("mpmt_dark_noise_count.png");
 
     TCanvas *c7 = new TCanvas("C7");
-    TGraph *chan_vs_dark = new TGraph(15,channels,dark_rates);
+    TGraph *chan_vs_dark = new TGraph(15,chan,dark_rates);
     chan_vs_dark->GetXaxis()->SetRangeUser(0,15);
     chan_vs_dark->GetXaxis()->SetTitle("Channel number");
     chan_vs_dark->GetYaxis()->SetTitle("Dark noise rate");
@@ -234,12 +218,10 @@ int main( int argc, char* argv[] ) {
 
     if (check_event) {
         TCanvas *c9 = new TCanvas("C9");
-        TGraph *multi_hit_time = new TGraph(16,multi_ch,pt);
+        TGraph *multi_hit_time = new TGraph(16,chan,pt);
         multi_hit_time->GetXaxis()->SetTitle("Channel number");
         multi_hit_time->GetYaxis()->SetTitle("Pulse times");
-        // cout << pulse_range[0] <<", " << pulse_range[1] << endl;
         multi_hit_time->GetYaxis()->SetRangeUser(pulse_range[0],pulse_range[1]);
-        // multi_hit_time->GetYaxis()->SetRangeUser(2000,2400);
         string graph_title = "Multi-hit event " + to_string(event_num) + " pulse times according to channel";
         multi_hit_time->SetTitle(graph_title.c_str());
         multi_hit_time->Draw("a*");
