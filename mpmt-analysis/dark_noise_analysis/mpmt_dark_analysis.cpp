@@ -8,6 +8,7 @@
 #include "TGaxis.h"
 #include "TF1.h"
 #include "TLegend.h"
+#include "TPaveStats.h" 
 
 #include <math.h>
 #include <iostream>
@@ -45,7 +46,7 @@ int main( int argc, char* argv[] ) {
     TH1F *pulse_times = new TH1F("pulse_times", "Dark noise pulse times across all channel",1024,0,8192); //1024
     TH1F *pulse_count = new TH1F("pulse_count", "Number of dark noise pulses per event (across all channels)",13,0,12);
     TH1F *multi_hits = new TH1F("multi_hits","Number of channels with simultaneous hits",11,0,11);
-    TH1F* multi_pulses = new TH1F("multi-hit","Number of pulses per channel for multiple hits (>2 simultaneous hits)",13,3,16);
+    TH1F* multi_pulses = new TH1F("multi-hit","Number of pulses per channel for multiple hits (>2 simultaneous hits)",14,3,17);
 
     // Set up for scatter plots
     int n=0;                        // array indexing
@@ -66,9 +67,9 @@ int main( int argc, char* argv[] ) {
     }
 
     // Dark rate calculation variabels
-    int num_dark_pulses[16]={0};
-    int dark_rates[16];
-    int time;
+    int num_dark_pulses[16]={0};    // total number of dark noise pulses in each channel
+    int dark_rates[16];             // dark noise rates indexed by channel
+    int time;                       // total time 
 
     // Multi-hit event rate calculation variables
     int num_multi_hits=0;
@@ -78,6 +79,9 @@ int main( int argc, char* argv[] ) {
     int pt[16];
     double pulse_range[2] = {0,8192};
     int counter = 0;
+
+    TH1F * max_pulse = new TH1F("largest pulse","Charge distribution of largest pulses in multi-hit events",80,0,80);
+    TH1F * sec_pulse = new TH1F("second largest pulse","Charge distribution of second largest pulse in every multi-hit event",80,0,80);
 
     // TCanvas *c_timing[16];
     // TH2F *timing[16];
@@ -91,6 +95,8 @@ int main( int argc, char* argv[] ) {
     // For each event:
     for (int i=0; i<tt[4]->GetEntries()-1; i++) {
         int wf_pulses[16]={0};              // Init array for num pulses per waveform
+        double max_pc = 0;                     // Maximum pulse height in this event
+        double sec_pc = 0;                     // Second largest pulse height in this event
         // For each channel:
         for (int j=4; j<=15; j++) {
             tt[j]->GetEvent(i);             // get waveform
@@ -110,12 +116,17 @@ int main( int argc, char* argv[] ) {
                 // Note: maximum of 1 pulse per waveform is counted (i.e. in the case of multiple consecutive pulses, count only one)
                 // Note: pulse height of only the first pulse in the waveform is recorded
                 if (wf_pulses[j]==0) {
-                    ph[j]->Fill(wf[j]->pulseCharges[k]*1000.0);
-                    // if (wf[j]->pulseCharges[k]*1000>100) cout << "event: " << i << endl;           // collect pulse charge of max pulse height
-                    num_dark_pulses[j]++;
+                    ph[j]->Fill(wf[j]->pulseCharges[k]*1000.0);     // collect pulse height of first pulse
+                    num_dark_pulses[j]++;                           // increment total num of pulses in channel j
+                    // update largest and second largest pulse heights:
+                    if (wf[j]->pulseCharges[0]*1000/8.5 > max_pc) {
+                        sec_pc=max_pc;
+                        max_pc=wf[j]->pulseCharges[0]*1000/8.5;
+                    }
+                    if (wf[j]->pulseCharges[0]*1000/8.5>sec_pc && wf[j]->pulseCharges[0]*1000/8.5<max_pc) sec_pc=wf[j]->pulseCharges[0]*1000/8.5;
                 }
 
-                wf_pulses[j]++;             // collect num pulses per waveform
+                wf_pulses[j]++;             // collect num pulses per waveform (in channel j)
 
                 // Collect pulse time
                 // Note: Beginning and end times were removed due to weird binning
@@ -128,53 +139,63 @@ int main( int argc, char* argv[] ) {
             }
         }
 
+        
+
+
         // MULTIPLE-HIT EVENT RATE ANALYSIS
         if  (i==0) cout<<"============== MULTI-HIT EVENT DETAILS =============="<<endl;
         int count = 1;                      // Init counter for multi-hit event rate
         // For each channel:
         for (int j=4; j<=15; j++) {  
 
-            // If channel j has a pulse:
-            //  - record the pulse time in channel c - pulse time in channel j
-            //  - count the number of other channels also with a pulse occuring at a similar time
+            // Count num channels with simultaneous hits
+            // INCLUDE FUNCTION: record the pulse time in channel c - pulse time in channel j
             if (wf_pulses[j]!=0) {
                 for (int c=4; c<=15; c++) {
-                    if (wf_pulses[c]==0) continue;          //alt condition for same num pulses: "!=wf_pulses[j]) {" 
-
+                    if (wf_pulses[c]==0) continue;          // alt condition for same num pulses: "!=wf_pulses[j]) {" 
                     // timing[j]->Fill(c,wf[c]->pulseTimes[0] - wf[j]->pulseTimes[0]);
-
                     if (wf[c]->pulseTimes[0]<=wf[j]->pulseTimes[0]+100 && wf[c]->pulseTimes[0]>=wf[j]->pulseTimes[0]-100) {
-                        num_channels[n]++;                  // Increase count for num channels with simulatenous hit
+                        num_channels[n]++;                  // inc count for num channels with simulatenous hit
                     }
                 }
             
                 multi_hits->Fill(num_channels[n]);          // Record num channels with simultaneous hit
                 
-                // Count the number of events with >2 multi-hit pulses
-                // Pprint statements to see details of specified multi-hit event
-                if (num_channels[n]>2) {//<5 && num_channels[n]>1) {
+                // Count the number of events with >2 simultaneous hits (multi-hits)
+                if (num_channels[n]>2) {
                     if (count==1) {
                         if (check_event && i==event_num) {
                             cout << "Event num: " << i << endl;
                             cout<<"Num channels with simultaenous hits: " << num_channels[n] << endl;
+                            cout<<"Max charge "<<max_pc<<" PE, second largest charge "<<sec_pc<<" PE"<<endl;
                         }
-                        num_multi_hits++;                   // Count number of multi-hit(>2) events
+                        num_multi_hits++;                   // inc number of multi-hit(>2) events
                     }
                     count++;
                     multi_pulses->Fill(j);                  // Record channels with multi-hit event
-                    if (check_event && i==event_num) cout<<"chan"<<j<<": "<<wf_pulses[j]<<" pulse(s), first pulse at: "<<wf[j]->pulseTimes[0]<<" ns"<<endl;
+
+                    // Print channel and pulse info
+                    if (check_event && i==event_num) {
+                        cout<<"chan"<<j<<": "<<wf_pulses[j]<<" pulse(s), ";
+                        cout<<"first pulse: at "<<wf[j]->pulseTimes[0]<<" ns, ";
+                        cout<<"with charge "<<wf[j]->pulseCharges[0]*1000/8.5<<"PE"<<endl;
+                    } 
+
+                    // Save max pulses and second max pulses
+                    if (max_pc>10) max_pulse->Fill(max_pc);
+                    if (sec_pc>2 && sec_pc<=10) sec_pulse->Fill(sec_pc);
+                    // if (wf[j]->pulseCharges[0]*1000>90) max_pulse->Fill(wf[j]->pulseCharges[0]*1000/8.5);           // collect charge of largest pulse
+                    // if (wf[j]->pulseCharges[0]*1000<=90 && wf[j]->pulseCharges[0]*1000>20) sec_pulse->Fill(wf[j]->pulseCharges[0]*1000/8.5);
 
                 }
                 n++;
             }
         }
     }
-    
+
     // Dark noise rate calculation and ROOT plotting
     for (int y=6; y<=17; y++) {
-
         int ch = (y>15) ? y-12 : y;
-
         // Calculate dark noise rate
         time = tt[ch]->GetEntries() * 8192 * pow(10,-9); //[seconds]
         dark_rates[ch] = num_dark_pulses[ch]/time; //[pulses/second]
@@ -236,7 +257,7 @@ int main( int argc, char* argv[] ) {
     multi_pulses->Draw();
     multi_pulses->GetXaxis()->SetTitle("Channel number");
     multi_pulses->GetYaxis()->SetTitle("Number of events");
-    c8->SaveAs("mpmt_multi_hit_count.png");
+    c8->SaveAs("mpmt_multi_hit_pulses.png");
 
     if (check_event) {
         TCanvas *c9 = new TCanvas("C9");
@@ -250,6 +271,26 @@ int main( int argc, char* argv[] ) {
         string fname = "mpmt_multi_hits_" + to_string(event_num) + ".png";
         c9->SaveAs(fname.c_str());
     }
+
+    TCanvas *c10 = new TCanvas("C10");
+    sec_pulse->SetLineColor(2);
+    // sec_pulse->GetYaxis()->SetRangeUser(0,150);
+    sec_pulse->Draw();
+    max_pulse->SetLineColor(1);
+    max_pulse->Draw("SAMES");
+    max_pulse->GetXaxis()->SetTitle("Charge of largest pulse (PE)");
+    max_pulse->GetYaxis()->SetTitle("Frequency");
+
+    c10->Modified();
+    c10->Update();
+
+    TPaveStats *p2 = (TPaveStats*)c10->GetPrimitive("stats");
+    p2->SetX1NDC(0.2);
+    p2->SetX2NDC(0.4);
+    p2->SetTextColor(2);
+    
+    c10->Modified();
+    c10->SaveAs("mpmt_multi_hit_charge.png");
     
     // for (int j=4; j<=6; j++) {
     //     timing[j]->GetXaxis()->SetTitle("Chan x");
