@@ -55,6 +55,7 @@ int main( int argc, char* argv[] ) {
     TTree* tt[16];
     WaveformFitResult* wf[16];
     TH1F* ph[16];
+    double mean[16]={0};
     for (int ch=4; ch<=15; ch++) {
         string filename = "ptfanalysis"+to_string(ch);
         tt[ch] = (TTree*)fin->Get(filename.c_str());
@@ -78,6 +79,15 @@ int main( int argc, char* argv[] ) {
     double pulse_range[2] = {0,8192};
     int counter = 0;
 
+    // TCanvas *c_timing[16];
+    // TH2F *timing[16];
+
+    // for (int j=4; j<=15; j++) {
+    //     c_timing[j] = new TCanvas("C_TIMING");
+    //     string th2f_name = "Time of hits in other channel relative to chan " + to_string(j);
+    //     timing[j] = new TH2F("timing_hist", th2f_name.c_str(),16,0,16,200,-100,100);
+    // }
+
     // For each event:
     for (int i=0; i<tt[4]->GetEntries()-1; i++) {
         int wf_pulses[16]={0};              // Init array for num pulses per waveform
@@ -88,6 +98,7 @@ int main( int argc, char* argv[] ) {
             // For each pulse
             for (int k=0; k<wf[j]->numPulses; k++) {
                 
+                // Save pulse time of channels with a hit, if given a specified event number
                 if (check_event && i==event_num && k==0) pt[j]=wf[j]->pulseTimes[k];
                 if (counter==0 && i==event_num) {
                     pulse_range[0] = wf[j]->pulseTimes[k]-50;
@@ -100,6 +111,7 @@ int main( int argc, char* argv[] ) {
                 // Note: pulse height of only the first pulse in the waveform is recorded
                 if (wf_pulses[j]==0) {
                     ph[j]->Fill(wf[j]->pulseCharges[k]*1000.0);
+                    // if (wf[j]->pulseCharges[k]*1000>100) cout << "event: " << i << endl;           // collect pulse charge of max pulse height
                     num_dark_pulses[j]++;
                 }
 
@@ -117,32 +129,41 @@ int main( int argc, char* argv[] ) {
         }
 
         // MULTIPLE-HIT EVENT RATE ANALYSIS
+        if  (i==0) cout<<"============== MULTI-HIT EVENT DETAILS =============="<<endl;
         int count = 1;                      // Init counter for multi-hit event rate
         // For each channel:
         for (int j=4; j<=15; j++) {  
 
-            // If channel j has a pulse, count the number of other channels also with a pulse occuring at a similar time
+            // If channel j has a pulse:
+            //  - record the pulse time in channel c - pulse time in channel j
+            //  - count the number of other channels also with a pulse occuring at a similar time
             if (wf_pulses[j]!=0) {
                 for (int c=4; c<=15; c++) {
                     if (wf_pulses[c]==0) continue;          //alt condition for same num pulses: "!=wf_pulses[j]) {" 
+
+                    // timing[j]->Fill(c,wf[c]->pulseTimes[0] - wf[j]->pulseTimes[0]);
+
                     if (wf[c]->pulseTimes[0]<=wf[j]->pulseTimes[0]+100 && wf[c]->pulseTimes[0]>=wf[j]->pulseTimes[0]-100) {
                         num_channels[n]++;                  // Increase count for num channels with simulatenous hit
                     }
-                    // if (i==172) cout << "chan" << c << ": " << wf[c]->pulseTimes[0] << ", j: " << c << ": " << wf[j]->pulseTimes[0] << endl;;
                 }
             
                 multi_hits->Fill(num_channels[n]);          // Record num channels with simultaneous hit
                 
                 // Count the number of events with >2 multi-hit pulses
-                // Uncomment print statements to see details of multi-hit events (will print a lot)
+                // Pprint statements to see details of specified multi-hit event
                 if (num_channels[n]>2) {//<5 && num_channels[n]>1) {
                     if (count==1) {
-                        // cout<<"Event num: " << i<<endl;
+                        if (check_event && i==event_num) {
+                            cout << "Event num: " << i << endl;
+                            cout<<"Num channels with simultaenous hits: " << num_channels[n] << endl;
+                        }
                         num_multi_hits++;                   // Count number of multi-hit(>2) events
                     }
                     count++;
                     multi_pulses->Fill(j);                  // Record channels with multi-hit event
-                    // cout<<"chan"<<j<<": "<<wf_pulses[j]<<"pulses, "<<num_channels[n]<<" channels, pulse time: "<<wf[j]->pulseTimes[0]<<endl;
+                    if (check_event && i==event_num) cout<<"chan"<<j<<": "<<wf_pulses[j]<<" pulse(s), first pulse at: "<<wf[j]->pulseTimes[0]<<" ns"<<endl;
+
                 }
                 n++;
             }
@@ -163,21 +184,22 @@ int main( int argc, char* argv[] ) {
         ph[ch]->Draw("][sames");
         ph[ch]->Fit("gaus","0Q","C",5,14);
         TF1 *fit = (TF1*)ph[ch]->GetListOfFunctions()->FindObject("gaus");
-        double mean = fit->GetParameter(1);
-        string legendname = "Chan" + to_string(ch) + " dark rate: " + to_string(dark_rates[ch]) + " pulses/sec. Mean: " + to_string(mean).substr(0, 4);
+        mean[y] = fit->GetParameter(1);
+        string legendname = "Chan" + to_string(ch) + " dark rate: " + to_string(dark_rates[ch]) + " pulses/sec. Mean: " + to_string(mean[y]).substr(0, 4);
         legend->AddEntry(ph[ch],legendname.c_str(),"l");
         ph[ch]->GetXaxis()->SetTitle("Pulse height (mV)");
         ph[ch]->GetYaxis()->SetTitle("Number of events");        
     }
-    legend->Draw();
-    c1->SaveAs("mpmt_dark_noise_ph.png");
 
     // Calculate and print the multi-hit event rate:
     multi_rate = num_multi_hits/time;
     cout << "Multi-hit event rate is: " << multi_rate << " events/second" << endl;
-
     // Calculate and print multi-hit even occurance:
     cout << "Num multi-hit events out of total num events is: " << num_multi_hits << "/" << tt[4]->GetEntries() << " = 0.0002873680035" << endl;
+    cout<<"=============== MULTI-HIT EVENT DETAILS END ==============="<<endl;
+
+    legend->Draw();
+    c1->SaveAs("mpmt_dark_noise_ph.png");
 
     // Plot graphs
     TCanvas *c4 = new TCanvas("C4");
@@ -229,6 +251,14 @@ int main( int argc, char* argv[] ) {
         c9->SaveAs(fname.c_str());
     }
     
+    // for (int j=4; j<=6; j++) {
+    //     timing[j]->GetXaxis()->SetTitle("Chan x");
+    //     string Yaxis_name = "Pulse time in chan x - pulse time in chan " + to_string(j);
+    //     timing[j]->GetYaxis()->SetTitle(Yaxis_name.c_str());
+    //     timing[j]->Draw("COLZ");
+    //     string file_name = "pt_comparison_ch_" + to_string(j) + ".png";
+    //     c_timing[j]->SaveAs(file_name.c_str());
+    // }
 
     fin->Close();
     return 0;
