@@ -587,34 +587,48 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
   bool dofit;
 
   config.Load(config_file);
-    if( !config.Get("terminal_output", terminal_output) ){
-      cout << "Missing terminal_output parameter from config file." << endl;
-      exit( EXIT_FAILURE );
-    }
-    if( !config.Get("pulse_location_cut", pulse_location_cut) ){
-      cout << "Missing pulse_location_cut parameter from config file." << endl;
-      exit( EXIT_FAILURE );
-    }
-    if( !config.Get("fft_cut", fft_cut) ){
-      cout << "Missing fft_cut parameter from config file." << endl;
-      exit( EXIT_FAILURE );
+  if( !config.Get("terminal_output", terminal_output) ){
+    cout << "Missing terminal_output parameter from config file." << endl;
+    exit( EXIT_FAILURE );
   }
-    if( !config.Get("do_pulse_finding", do_pulse_finding) ){
-      cout << "Disabling  pulse finding." <<do_pulse_finding << std::endl;
-      do_pulse_finding = false;
-     }
-    //cout<<do_pulse_finding<<endl;                                                                                                                                                                                                             
-    if( !config.Get("do_pulse_fitting", dofit) ){
-      dofit = false;
-      std::cout <<"Disabling pulse fitting"<<dofit<< std::endl;
-
-    }
-    else{
-    //  if(dofit){                                                                                                                                                                                                                              
-    dofit = true;
-    do_pulse_finding = true;
-    std::cout <<"Enabling pulse fitting "<< std::endl;
-}
+  if( !config.Get("pulse_location_cut", pulse_location_cut) ){
+    cout << "Missing pulse_location_cut parameter from config file." << endl;
+    exit( EXIT_FAILURE );
+  }
+  if( !config.Get("fft_cut", fft_cut) ){
+    cout << "Missing fft_cut parameter from config file." << endl;
+    exit( EXIT_FAILURE );
+  }
+  if( !config.Get("do_pulse_finding", do_pulse_finding) ){
+    cout << "Missing pulse_finding from config file." << endl;
+    exit( EXIT_FAILURE );
+  }
+  if( !config.Get("do_pulse_fitting", dofit){
+    cout << "Missing pulse fit parameter from config file." << endl;
+    exit( EXIT_FAILURE );
+  }
+  
+  config.Get("do_pulse_finding", do_pulse_finding); 
+ if (do_pulse_finding==false){
+    cout << "Disabling pulse finding." << std::endl;
+    //do_pulse_finding = false;
+  }
+ else {
+   do_pulse_finding=true;
+   std::cout <<"Enabling pulse fitting"<< std::endl;
+ }
+   
+ config.Get("do_pulse_fitting", dofit);
+  if (dofit==false){
+  std::cout <<"Disabling pulse fitting"<< std::endl;
+}  
+  else {
+    dofit=true;
+    std::cout <<"Enabling pulse fitting"<< std::endl;
+  } 
+ //dofit = true;
+      
+  
 
   static int instance_count =0;
   int savewf_count =0;
@@ -693,16 +707,15 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
       }
       hwaveform->Scale(digi.fullScaleRange/digiCounts);
       InitializeFitResult( j, numWaveforms );
-      
+      config.Get("do_pulse_finding", do_pulse_finding);
       // Do pulse finding (if requested)
       if(do_pulse_finding){
         find_pulses(0, hwaveform, fitresult, pmt);
       }else{
         fitresult->numPulses = 0;
       }
-	  if( config.Get("do_pulse_fitting", dofit) ){
-	         dofit=true ;
-	       }
+      config.Get("do_pulse_fitting", dofit);
+     
       // Do simple charge sum calculation
       if( pmt.pmt == 0 ) ChargeSum(0.9931);
       // For main PMT do FFT and check if there is a waveform
