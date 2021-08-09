@@ -51,6 +51,7 @@
 #include <cmath>
 #include <unordered_set>
 
+#include "TCanvas.h"
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TFile.h"
@@ -112,7 +113,7 @@ int main(int argc, char** argv) {
     activePMTs.push_back(PMT);
     //PTF::PMT PMT0 = {0,0,PTF::mPMT_REV0_PMT}; // only looking at one pmt at a time
     //PTF::PMT PMT1 = {1,1,PTF::mPMT_REV0_PMT}; // only looking at one pmt at a time
-    ////PTF::PMT PMT16 = {16,16,PTF::mPMT_REV0_PMT}; // only looking at one pmt at a time
+    //PTF::PMT PMT16 = {16,16,PTF::mPMT_REV0_PMT}; // only looking at one pmt at a time
     //PTF::PMT PMT17 = {17,17,PTF::mPMT_REV0_PMT}; // only looking at one pmt at a time
     //PTF::PMT PMT18 = {18,18,PTF::mPMT_REV0_PMT};
     //PTF::PMT PMT19 = {19,19,PTF::mPMT_REV0_PMT};
@@ -124,12 +125,31 @@ int main(int argc, char** argv) {
   cerr << "Num entries: " << wrapper.getNumEntries() << endl << endl;
   cout << "Points ready " << endl;
 
+  TH1F * pulse_shape; // = new TH1F("pulse_shape","Average pulse shape",7500,1500,3000);
+  float injected_times[1000000];    // check not out of bound 
+  // or use a vector
+  // float * injected_times;
+
   for(unsigned int i = 0; i < active_channels.size(); i++){
     PTF::PMT pmt = activePMTs[i];
-    PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, pmt, string(argv[3]), true );
-    if(i == 0) analysis->write_scanpoints();
+    
+    if (i==0) {
+      PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, pmt, string(argv[3]), true, &injected_times[0] );
+      analysis->write_scanpoints();
+      // injected_times = analysis->get_injected_times();  // retrieve fitted injected pulse times
+    }
+
+    if (i==1) {
+      pulse_shape = new TH1F("pulse_shape","Average pulse shape",600,2000,2600);
+      PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, pmt, string(argv[3]), true, &injected_times[0], pulse_shape);
+    }
 
   }
+
+  TCanvas *c1 = new TCanvas("C1","C1",1000,800);
+  pulse_shape->Draw("HIST P");
+  // pulse_shape->GetYaxis()->SetRangeUser(0.90,1.03);
+  c1->SaveAs("pulse_shape.png");
     // Do analysis of waveforms for each scanpoint
     //analysis0->write_scanpoints();
 

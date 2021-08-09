@@ -23,7 +23,7 @@ using namespace std;
 /// Keeps track of number of Scan Points, and locations used find entries in TTree
 class PTFAnalysis {
 public:
-  PTFAnalysis( TFile * outfile,Wrapper & ptf, double errorbar, PTF::PMT & pmt, string config_file, bool savewf=false );
+  PTFAnalysis( TFile * outfile,Wrapper & ptf, double errorbar, PTF::PMT & pmt, string config_file, bool savewf=false, float * injected_times=NULL, TH1F* pulse_shape=NULL );
   ~PTFAnalysis(){
     if ( fitresult ) delete fitresult;
   }
@@ -41,6 +41,9 @@ public:
 
   // Post-fitresult analysis
   const std::vector< double >      get_bins( char dim );
+
+  // return pulse times of template waveform
+  // float * get_injected_times() {return times;}
   
 private:
   void ChargeSum( float ped ); // Charge sum relative to ped
@@ -73,6 +76,7 @@ private:
   TDirectory* wfdir_fft{nullptr};
   TDirectory* nowfdir_fft{nullptr};
 
+  TH1F * jitter_dist = new TH1F("jitter_dist","Distribution of jitter correction in creating pulse shape",40,-20,30);
 };
 
 #endif // __PTFANALYSIS__

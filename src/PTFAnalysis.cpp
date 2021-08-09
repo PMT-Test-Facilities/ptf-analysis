@@ -4,6 +4,7 @@
 #include "Utilities.hpp"
 #include "TVirtualFFT.h"
 #include "PulseFinding.hpp"
+#include "TCanvas.h"
 #include "TH2D.h"
 
 #include <iostream>
@@ -466,14 +467,14 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       // then fit gaussian
       int fitstat = hwaveform->Fit( ffitfunc, "Q", "", fit_minx, fit_maxx);
       
-      if(pmt.channel == 1 && 1) std::cout  << "FF " << ffitfunc->GetParameter(0)<< " "
-				     << ffitfunc->GetParameter(1)<< " "
-				     << ffitfunc->GetParameter(2)<< " "
-				     << amplitude << " " 
-				     << ffitfunc->GetParameter(2)/amplitude << " " 
-				     << ffitfunc->GetParameter(3)<< " "
-				     << ffitfunc->GetParameter(4)<< "   |||||"
-				     << std::endl;
+      // if(pmt.channel == 1 && 1) std::cout  << "FF " << ffitfunc->GetParameter(0)<< " "
+			// 	     << ffitfunc->GetParameter(1)<< " "
+			// 	     << ffitfunc->GetParameter(2)<< " "
+			// 	     << amplitude << " " 
+			// 	     << ffitfunc->GetParameter(2)/amplitude << " " 
+			// 	     << ffitfunc->GetParameter(3)<< " "
+			// 	     << ffitfunc->GetParameter(4)<< "   |||||"
+			// 	     << std::endl;
 
     }
     
@@ -576,7 +577,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
   }
 }
 
-PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PTF::PMT & pmt, string config_file, bool savewf ){
+PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PTF::PMT & pmt, string config_file, bool savewf, float * injected_times, TH1F* pulse_shape ){
 
   // Load config file
   Configuration config;
@@ -659,7 +660,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
   // Loop over scan points (index i)
   unsigned long long nfilled = 0;// number of TTree entries so far
   for (unsigned i = 2; i < wrapper.getNumEntries(); i++) {
-    //if ( i>2000 ) continue;
+    if ( i>10000 ) continue;
     if( terminal_output ){
       cerr << "PTFAnalysis scan point " << i << " / " << wrapper.getNumEntries() << "\u001b[34;1m (" << (((double)i)/wrapper.getNumEntries()*100) << "%)\u001b[0m\033[K";
       cerr << "\r";
@@ -708,6 +709,20 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
       //if( dofit && pmt.pmt == 1 ) dofit = MonitorCut( 25. );
       if( dofit ){
         FitWaveform( j, numWaveforms, pmt ); // Fit waveform and copy fit results into TTree
+        // cout << "Event #: " << i << endl;
+        if (pmt.channel==1) injected_times[i]=fitresult->mean; // storing fitted pulse times of injected pulse to be retrieved
+        if (pmt.channel==2) {
+          float jitter_correction = injected_times[i]-2100;
+          jitter_dist->Fill(jitter_correction);
+          if (jitter_correction<0) cout << "Event num with negative jitter: " << i << endl;
+          // cout << "(corrected time) " << fitresult->mean << " - (jitter correction) " << jitter_correction << " = " << fitresult->mean - jitter_correction << endl;
+          // cout<<"    chan1 time: " << injected_times[i] << " ns" << endl;
+          // cout<<"    chan2 time: " << fitresult->mean << " ns" << endl;
+          // cout<<"    diff between chan2 and chan1 pulse: " << fitresult->mean - injected_times[i] << endl;
+          // cout<<"    jitter correction: " << jitter_correction << endl;
+          // cout<<"    corrected time: " << fitresult->mean - jitter_correction <<endl;
+          for (int k=250; k<320; k++) pulse_shape->Fill(k*8 - jitter_correction, hwaveform->GetBinContent(k));
+        }
       }
       fitresult->haswf = utils.HasWaveform( fitresult, pmt.pmt );
       ptf_tree->Fill();
@@ -756,6 +771,14 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
       ++nfilled;
     }
   }
+  if (pmt.channel==2) {
+    TCanvas *CJ = new TCanvas("CJ","CJitter",1000,800);
+    jitter_dist->Draw();
+    jitter_dist->GetXaxis()->SetTitle("Jitter correction (ns)");
+    jitter_dist->GetYaxis()->SetTitle("Frequency");
+    CJ->SaveAs("jitter_correction_dist.png");
+  }
+  
   //cout << endl;
   // Done.
   
