@@ -127,8 +127,6 @@ int main(int argc, char** argv) {
 
   TH1F * pulse_shape; // = new TH1F("pulse_shape","Average pulse shape",7500,1500,3000);
   float injected_times[1000000];    // check not out of bound 
-  // or use a vector
-  // float * injected_times;
 
   for(unsigned int i = 0; i < active_channels.size(); i++){
     PTF::PMT pmt = activePMTs[i];
@@ -136,11 +134,10 @@ int main(int argc, char** argv) {
     if (i==0) {
       PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, pmt, string(argv[3]), true, &injected_times[0] );
       analysis->write_scanpoints();
-      // injected_times = analysis->get_injected_times();  // retrieve fitted injected pulse times
     }
 
     if (i==1) {
-      pulse_shape = new TH1F("pulse_shape","Average pulse shape",600,2000,2600);
+      pulse_shape = new TH1F("pulse_shape","Average pulse shape",500,2000,2500);
       PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, pmt, string(argv[3]), true, &injected_times[0], pulse_shape);
     }
 
@@ -148,8 +145,10 @@ int main(int argc, char** argv) {
 
   TCanvas *c1 = new TCanvas("C1","C1",1000,800);
   pulse_shape->Draw("HIST P");
-  // pulse_shape->GetYaxis()->SetRangeUser(0.90,1.03);
+  pulse_shape->GetYaxis()->SetRangeUser(0.990,1.005);
   c1->SaveAs("pulse_shape.png");
+
+
     // Do analysis of waveforms for each scanpoint
     //analysis0->write_scanpoints();
 
