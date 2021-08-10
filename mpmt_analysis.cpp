@@ -142,8 +142,16 @@ int main(int argc, char** argv) {
   }
 
   TCanvas *c1 = new TCanvas("C1","C1",1000,800);
-  pulse_shape->Draw("HIST P");
-  pulse_shape->GetYaxis()->SetRangeUser(0.990,1.005);
+  pulse_shape->GetXaxis()->SetTitle("Time (ns)");
+  cout << "min: " << pulse_shape->GetBinContent(pulse_shape->GetMinimumBin()) << endl;
+  cout << "max: " << pulse_shape->GetBinContent(pulse_shape->GetMaximumBin()) << endl;
+  for (int j=1; j<500; j++) pulse_shape->SetBinError(j,0);
+
+  // pulse_shape->GetYaxis()->SetTitle("Cumulative pulse height (V)");
+  pulse_shape->Draw("P HIST");
+  pulse_shape->SetMarkerStyle(8);
+  pulse_shape->SetMarkerSize(0.5);
+  pulse_shape->GetYaxis()->SetRangeUser(pulse_shape->GetBinContent(pulse_shape->GetMaximumBin())-0.007*973180,pulse_shape->GetBinContent(pulse_shape->GetMaximumBin())+0.001*973180);
   c1->SaveAs("pulse_shape.png");
 
   outFile->Write();
