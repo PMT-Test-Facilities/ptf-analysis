@@ -136,7 +136,7 @@ int main(int argc, char** argv) {
     }
 
     if (i==1) {
-      pulse_shape = new TH1F("pulse_shape","Average pulse shape",500,2000,2500);
+      pulse_shape = new TH1F("pulse_shape","Average pulse shape",400,2000,2400);
       PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, pmt, string(argv[3]), true, &injected_times[0], pulse_shape);
     }
 

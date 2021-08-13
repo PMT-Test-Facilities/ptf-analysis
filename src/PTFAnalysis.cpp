@@ -368,7 +368,8 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     double sbaseline = BrbSettingsTree::Get()->GetBaseline(pmt.channel);
     
     // ellipitcall modified gaussian
-    if(pmt.channel >= 16){
+    // if(pmt.channel >= 16){
+    if (pmt.channel ==1) {
       if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",funcEMG,fit_minx-30,fit_maxx+30,5);
       ffitfunc->SetParameters( fitresult->amp, fitresult->mean, 8.0, 1.0, fitresult->ped );
       ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "exp decay", "Offset" );
@@ -406,7 +407,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     }
 
     // Bessel fit
-    if(pmt.channel < 16){
+    if(pmt.channel < 16 && pmt.channel!=1){
 
       fit_minx = min_bin - 8*6.5;
       //fit_maxx = min_bin + 8.0*3.5;
@@ -453,14 +454,14 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       // then fit gaussian
       int fitstat = hwaveform->Fit( ffitfunc, "Q", "", fit_minx, fit_maxx);
       
-      // if(pmt.channel == 1 && 1) std::cout  << "FF " << ffitfunc->GetParameter(0)<< " "
-			// 	     << ffitfunc->GetParameter(1)<< " "
-			// 	     << ffitfunc->GetParameter(2)<< " "
-			// 	     << amplitude << " " 
-			// 	     << ffitfunc->GetParameter(2)/amplitude << " " 
-			// 	     << ffitfunc->GetParameter(3)<< " "
-			// 	     << ffitfunc->GetParameter(4)<< "   |||||"
-			// 	     << std::endl;
+      if(pmt.channel == 1 && 1) std::cout  << "FF " << ffitfunc->GetParameter(0)<< " "
+				     << ffitfunc->GetParameter(1)<< " "
+				     << ffitfunc->GetParameter(2)<< " "
+				     << amplitude << " " 
+				     << ffitfunc->GetParameter(2)/amplitude << " " 
+				     << ffitfunc->GetParameter(3)<< " "
+				     << ffitfunc->GetParameter(4)<< "   |||||"
+				     << std::endl;
 
     }
     
@@ -646,8 +647,8 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
   // Loop over scan points (index i)
   unsigned long long nfilled = 0;// number of TTree entries so far
   for (unsigned i = 2; i < wrapper.getNumEntries(); i++) {
-    if ( i<300000) continue;
-    if ( i>400000) continue;
+    // if ( i<300000) continue;
+    if ( i>30000) continue;
     if( terminal_output ){
       cerr << "PTFAnalysis scan point " << i << " / " << wrapper.getNumEntries() << "\u001b[34;1m (" << (((double)i)/wrapper.getNumEntries()*100) << "%)\u001b[0m\033[K";
       cerr << "\r";
@@ -695,7 +696,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
       if( dofit && fft_cut && pmt.pmt == 0 ) dofit = FFTCut();
       //if( dofit && pmt.pmt == 1 ) dofit = MonitorCut( 25. );
       if( dofit ){
-        FitWaveform( j, numWaveforms, pmt ); // Fit waveform and copy fit results into TTree
+        if (pmt.channel==1) FitWaveform( j, numWaveforms, pmt ); // Fit waveform and copy fit results into TTree
         if (pmt.channel==1) injected_times[i]=fitresult->mean; // storing fitted pulse times of injected pulse to be retrieved
         if (pmt.channel==2) {
           pt_dist->Fill(injected_times[i]);
