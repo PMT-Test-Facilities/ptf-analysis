@@ -646,7 +646,8 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
   // Loop over scan points (index i)
   unsigned long long nfilled = 0;// number of TTree entries so far
   for (unsigned i = 2; i < wrapper.getNumEntries(); i++) {
-    // if ( i>500) continue;
+    if ( i<300000) continue;
+    if ( i>400000) continue;
     if( terminal_output ){
       cerr << "PTFAnalysis scan point " << i << " / " << wrapper.getNumEntries() << "\u001b[34;1m (" << (((double)i)/wrapper.getNumEntries()*100) << "%)\u001b[0m\033[K";
       cerr << "\r";
@@ -695,29 +696,13 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
       //if( dofit && pmt.pmt == 1 ) dofit = MonitorCut( 25. );
       if( dofit ){
         FitWaveform( j, numWaveforms, pmt ); // Fit waveform and copy fit results into TTree
-        // cout << "Event #: i=" << i-2 << endl;
         if (pmt.channel==1) injected_times[i]=fitresult->mean; // storing fitted pulse times of injected pulse to be retrieved
         if (pmt.channel==2) {
-          float jitter_correction = injected_times[i]-2092;
-          // cout<<"  jitter correction: " << jitter_correction << endl;
+          pt_dist->Fill(injected_times[i]);
+          float jitter_correction = injected_times[i]-2080;
           jitter_dist->Fill(jitter_correction);
-          mod_jitter_dist->Fill(((int)jitter_correction)%8);
-          jitter_correction = jitter_correction - ((int)jitter_correction)%8;
-          // cout<<"  adjusted jitter correction: " << jitter_correction << endl;
-          // cout<<"    chan1 time: " << injected_times[i] << " ns" << endl;
-          // cout<<"    chan2 time: " << fitresult->mean << " ns" << endl;
-          // cout<<"    diff between chan2 and chan1 pulse: " << fitresult->mean - injected_times[i] << endl;
-          // cout<<"    corrected chan2 time: " << fitresult->mean - jitter_correction <<endl;
-          // cout <<"    numpulses: " << fitresult->numPulses << endl;
-          if (fitresult->numPulses >0) {//fitresult->pulseTimes[0]>2000 && fitresult->pulseTimes[0]<2560) {
-            // cout << "    pulse detected" <<endl;
-            // cout << "chan2: " << endl;
-            for (int k=250; k<320; k++) {
-              // if (k<260) cout << "pre-adjustment: " << k*8 << "ns, post-adjustment: " << k*8-jitter_correction << " ns" << endl;
-              // if (((int)((k*8)-jitter_correction))%8 != 7) cout << "EVENT: " << i-2 << endl;
-              if (((int)(k*8 - jitter_correction))%8 == 0) pulse_shape->Fill(k*8 - jitter_correction -0.01, hwaveform->GetBinContent(k));
-              else pulse_shape->Fill(k*8 - jitter_correction, hwaveform->GetBinContent(k));
-            }
+          if (fitresult->numPulses >0) {
+            for (int k=250; k<320; k++) pulse_shape->Fill(k*8 - jitter_correction, hwaveform->GetBinContent(k));
           }
         }
       }
@@ -773,17 +758,13 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
     jitter_dist->Draw();
     jitter_dist->GetXaxis()->SetTitle("Jitter correction (ns)");
     jitter_dist->GetYaxis()->SetTitle("Frequency");
-    c1->SaveAs("jitter_correction_dist.png");
+    c1->SaveAs("PS_jitter_correction_dist.png");
 
     TCanvas *c2 = new TCanvas("C2","C2",1000,800);
-    mod_jitter_dist->Draw();
-    mod_jitter_dist->GetXaxis()->SetTitle("Jitter correction mod 8(ns)");
-    mod_jitter_dist->GetYaxis()->SetTitle("Frequency");
-    c2->SaveAs("jitter_correction_mod.png");
-
-    pulse_shape->SetMarkerStyle(1);
-    pulse_shape->SetDirectory(outfile);
-    
+    pt_dist->Draw();
+    pt_dist->GetXaxis()->SetTitle("Time (ns)");
+    pt_dist->GetYaxis()->SetTitle("Frequency");
+    c2->SaveAs("PS_pt_dist.png");
   }
   
   //cout << endl;

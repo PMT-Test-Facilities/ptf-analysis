@@ -48,6 +48,7 @@
 #include <cmath>
 
 #include "TCanvas.h"
+#include "TGraph.h"
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TFile.h"
@@ -120,7 +121,7 @@ int main(int argc, char** argv) {
   cout << "Points ready " << endl;
 
   TH1F * pulse_shape; // = new TH1F("pulse_shape","Average pulse shape",7500,1500,3000);
-  float injected_times[1000000];    // check not out of bound 
+  float injected_times[1010000];    // check not out of bound 
 
   
   // Open the BRB Settings tree 
@@ -141,18 +142,35 @@ int main(int argc, char** argv) {
 
   }
 
+  // save correction factors
+  float correction_factor[8];
+  float base = pulse_shape->GetBinContent(1);
+  // for (int i=254; i<262; i++) {
+  for (int i=50; i<58; i++) {
+    correction_factor[i-50]=pulse_shape->GetBinContent(i-50+1)/base;
+    cout << "correction factor = " << correction_factor[i-50] << " (" << i-50 << ")" << endl;  
+  }
+  for (int i=0; i<500; i++) {
+    int phase = i%8;
+    float corrected_bin = pulse_shape->GetBinContent(i+1)/correction_factor[phase];
+    pulse_shape->SetBinContent(i+1,corrected_bin);
+  }
+
   TCanvas *c1 = new TCanvas("C1","C1",1000,800);
   pulse_shape->GetXaxis()->SetTitle("Time (ns)");
-  cout << "min: " << pulse_shape->GetBinContent(pulse_shape->GetMinimumBin()) << endl;
-  cout << "max: " << pulse_shape->GetBinContent(pulse_shape->GetMaximumBin()) << endl;
   for (int j=1; j<500; j++) pulse_shape->SetBinError(j,0);
-
-  // pulse_shape->GetYaxis()->SetTitle("Cumulative pulse height (V)");
   pulse_shape->Draw("P HIST");
   pulse_shape->SetMarkerStyle(8);
   pulse_shape->SetMarkerSize(0.5);
-  pulse_shape->GetYaxis()->SetRangeUser(pulse_shape->GetBinContent(pulse_shape->GetMaximumBin())-0.007*973180,pulse_shape->GetBinContent(pulse_shape->GetMaximumBin())+0.001*973180);
-  c1->SaveAs("pulse_shape.png");
+  c1->SaveAs("PS.png");
+
+  TCanvas *c2 = new TCanvas("C2","C2",1000,800);
+  float binning[8]={0,1,2,3,4,5,6,7};
+  TGraph *correction = new TGraph(8,binning,correction_factor);
+  correction->GetXaxis()->SetTitle("Phase (event_num mod 8)");
+  correction->GetYaxis()->SetTitle("Correction factor");
+  correction->Draw("a*");
+  c2->SaveAs("PS_correction_factors.png");
 
   outFile->Write();
   outFile->Close();

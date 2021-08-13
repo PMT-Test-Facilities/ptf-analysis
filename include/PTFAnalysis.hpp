@@ -76,8 +76,8 @@ private:
   TDirectory* wfdir_fft{nullptr};
   TDirectory* nowfdir_fft{nullptr};
 
-  TH1F * jitter_dist = new TH1F("jitter_dist","Distribution of jitter correction in creating pulse shape",40,0,40);
-  TH1F * mod_jitter_dist = new TH1F("mod_jitter_dist","Distribution of jitter correction mod 8 in creating pulse shape",10,-1,9);
+  TH1F * jitter_dist = new TH1F("jitter_dist","Distribution of jitter correction in creating pulse shape",50,0,50);
+  TH1F * pt_dist = new TH1F("pt_dist","Distribution of fitted injected pulse times",50,2080,2130);
 };
 
 #endif // __PTFANALYSIS__
