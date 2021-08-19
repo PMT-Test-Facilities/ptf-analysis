@@ -374,36 +374,38 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       ffitfunc->SetParameters( fitresult->amp, fitresult->mean, 8.0, 1.0, fitresult->ped );
       ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "exp decay", "Offset" );
       
-      
+      ffitfunc->SetParLimits(0, -1000, 100);
       ffitfunc->SetParameter(1, min_bin );
+      ffitfunc->SetParLimits(1, 1800.0, 2600.0 );
+      ffitfunc->FixParameter(2, 9.6 );    // dont fix and test, eventually fix
+      ffitfunc->SetParameter(3, 15.8 );   // eventually fix
+      ffitfunc->FixParameter(4, sbaseline);
+
+      cout << "Fit params: " << endl;
+      
+      for (int k=0; k<5; k++) {
+        cout<<"par["<<k<<"]: "<<
+      }
+
+      amplitude = sbaseline - min_value;
+      ffitfunc->SetParameter(0, amplitude*-10.0);
+
+      // What is this for???
+      if(pmt.channel >= 0){
+	      ffitfunc->SetParameter(0, amplitude*-0.63);
+      }
+
       //ffitfunc->SetParameter(2, 13 );
       //ffitfunc->SetParameter(3, 1 );    
       //ffitfunc->FixParameter(2, 13 );
       //ffitfunc->FixParameter(3, 1 );
-      
-      
-      ffitfunc->FixParameter(2, 9.6 );
-      	ffitfunc->SetParameter(3, 15.8 );
-      //ffitfunc->FixParameter(3, 6.0 );
-      
-      
-      amplitude = sbaseline - min_value;
-      ffitfunc->SetParameter(0, amplitude*-10.0);
-      if(pmt.channel >= 0){
-	ffitfunc->SetParameter(0, amplitude*-0.63);
-      }
-      ffitfunc->FixParameter(4, sbaseline);
-      ffitfunc->SetParLimits(0, -1000, 100);
-      ffitfunc->SetParLimits(1, 1800.0, 2600.0 );
+      //ffitfunc->FixParameter(3, 6.0 );      
       //ffitfunc->SetParLimits(2, 10.56, 10.58 );
       //ffitfunc->SetParLimits(3, 0.1, 0.9 );
       //    ffitfunc->SetParLimits(4, 0.99, 1.01 );
       
       // then fit gaussian
-      fitstat = hwaveform->Fit( ffitfunc, "Q", "", fit_minx, fit_maxx);
-
-
-      
+      fitstat = hwaveform->Fit( ffitfunc, "", "", fit_minx, fit_maxx);
     }
 
     // Bessel fit
@@ -647,8 +649,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
   // Loop over scan points (index i)
   unsigned long long nfilled = 0;// number of TTree entries so far
   for (unsigned i = 2; i < wrapper.getNumEntries(); i++) {
-    // if ( i<300000) continue;
-    if ( i>30000) continue;
+    if ( i>5) continue;
     if( terminal_output ){
       cerr << "PTFAnalysis scan point " << i << " / " << wrapper.getNumEntries() << "\u001b[34;1m (" << (((double)i)/wrapper.getNumEntries()*100) << "%)\u001b[0m\033[K";
       cerr << "\r";
