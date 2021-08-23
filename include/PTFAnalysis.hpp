@@ -76,6 +76,7 @@ private:
   TDirectory* wfdir_fft{nullptr};
   TDirectory* nowfdir_fft{nullptr};
 
+  // Histograms for PMT pulse shape analysis
   TH1F * jitter_dist = new TH1F("jitter_dist","Distribution of jitter correction in creating pulse shape",100,25,125);
   TH1F * pt_dist = new TH1F("pt_dist","Distribution of fitted injected pulse times",100,2110,2210);
 };

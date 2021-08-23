@@ -29,7 +29,6 @@
 /// Author: Blair Jamieson (Sep. 2019)
 /// Update by T. Lindner (June 2020) for mPMT analysis
 
-
 #include "wrapper.hpp"
 #include "WaveformFitResult.hpp"
 #include "ScanPoint.hpp"
@@ -70,8 +69,6 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-
-  
   std::cout << "Creating utilities " << std::endl;
   // Get utilities
   Utilities utils;
@@ -103,15 +100,10 @@ int main(int argc, char** argv) {
 
 
   // Loop over the active channels to do setup.
-
   for(unsigned int i = 0; i < active_channels.size(); i++){ 
-    
     int ch = active_channels[i];
-    
     PTF::PMT PMT = {ch,ch,PTF::mPMT_REV0_PMT};
-
     activePMTs.push_back(PMT);
-
   }
   vector<PTF::Gantry> gantries = {PTF::Gantry0, PTF::Gantry1};
   Wrapper wrapper = Wrapper(1, 1024, activePMTs, phidgets, gantries,mPMT_DIGITIZER);
@@ -120,8 +112,9 @@ int main(int argc, char** argv) {
   cerr << "Num entries: " << wrapper.getNumEntries() << endl << endl;
   cout << "Points ready " << endl;
 
+  // Declare histogram for average pulse shape and array of injected pulse times (to be fitted)
   TH1F * pulse_shape; // = new TH1F("pulse_shape","Average pulse shape",7500,1500,3000);
-  float injected_times[1010000];    // check not out of bound 
+  float injected_times[wrapper.getNumEntries()];    // check not out of bound 
 
   
   // Open the BRB Settings tree 
@@ -129,23 +122,28 @@ int main(int argc, char** argv) {
   
   for(unsigned int i = 0; i < active_channels.size(); i++){
     PTF::PMT pmt = activePMTs[i];
+
+    // // Original code for general mPMT analysis
+    // PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, pmt, string(argv[3]), true );
+    // if(i == 0) analysis->write_scanpoints();
     
-    if (i==0) {
+    // Updated code by Y.Ma (Aug 2021) for pulse shape analysis
+    // Injected pulse analysis
+    if (pmt.channel==1) {
       PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, pmt, string(argv[3]), true, &injected_times[0] );
       analysis->write_scanpoints();
     }
-
-    if (i==1) {
+    // PMT pulse analysis
+    if (pmt.channel==2) {
       pulse_shape = new TH1F("pulse_shape","Average pulse shape",400,2000,2400);
       PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, pmt, string(argv[3]), true, &injected_times[0], pulse_shape);
     }
 
   }
 
-  // save correction factors
+  // Correct for jitter in y-axis per event by selecting 8 consecutive points
   float correction_factor[8];
   float base = pulse_shape->GetBinContent(1);
-  // for (int i=254; i<262; i++) {
   for (int i=50; i<58; i++) {
     correction_factor[i-50]=pulse_shape->GetBinContent(i-50+1)/base;
     cout << "correction factor = " << correction_factor[i-50] << " (" << i-50 << ")" << endl;  
@@ -156,6 +154,7 @@ int main(int argc, char** argv) {
     pulse_shape->SetBinContent(i+1,corrected_bin);
   }
 
+  // Plot average pulse shape
   TCanvas *c1 = new TCanvas("C1","C1",1000,800);
   pulse_shape->GetXaxis()->SetTitle("Time (ns)");
   for (int j=1; j<500; j++) pulse_shape->SetBinError(j,0);
@@ -164,13 +163,14 @@ int main(int argc, char** argv) {
   pulse_shape->SetMarkerSize(0.5);
   c1->SaveAs("PS.png");
 
-  TCanvas *c2 = new TCanvas("C2","C2",1000,800);
-  float binning[8]={0,1,2,3,4,5,6,7};
-  TGraph *correction = new TGraph(8,binning,correction_factor);
-  correction->GetXaxis()->SetTitle("Phase (event_num mod 8)");
-  correction->GetYaxis()->SetTitle("Correction factor");
-  correction->Draw("a*");
-  c2->SaveAs("PS_correction_factors.png");
+  // // Plot correction factor distribution
+  // TCanvas *c2 = new TCanvas("C2","C2",1000,800);
+  // float binning[8]={0,1,2,3,4,5,6,7};
+  // TGraph *correction = new TGraph(8,binning,correction_factor);
+  // correction->GetXaxis()->SetTitle("Phase (event_num mod 8)");
+  // correction->GetYaxis()->SetTitle("Correction factor");
+  // correction->Draw("a*");
+  // c2->SaveAs("PS_correction_factors.png");
 
   outFile->Write();
   outFile->Close();
@@ -179,4 +179,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-
