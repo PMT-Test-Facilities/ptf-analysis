@@ -143,10 +143,10 @@ int main(int argc, char** argv) {
 
   // Correct for jitter in y-axis per event by selecting 8 consecutive points
   float correction_factor[8];
-  float base = pulse_shape->GetBinContent(1);
-  for (int i=50; i<58; i++) {
-    correction_factor[i-50]=pulse_shape->GetBinContent(i-50+1)/base;
-    cout << "correction factor = " << correction_factor[i-50] << " (" << i-50 << ")" << endl;  
+  float base = pulse_shape->GetBinContent(41);
+  for (int i=40; i<48; i++) {
+    correction_factor[i-40]=pulse_shape->GetBinContent(i+1)/base;
+    cout << "correction factor = " << correction_factor[i-40] << " (" << i-40 << ")" << endl;  
   }
   for (int i=0; i<500; i++) {
     int phase = i%8;
@@ -161,7 +161,8 @@ int main(int argc, char** argv) {
   pulse_shape->Draw("P HIST");
   pulse_shape->SetMarkerStyle(8);
   pulse_shape->SetMarkerSize(0.5);
-  c1->SaveAs("PS.png");
+  string filename = "run0" + string(argv[2]) + "_pulse_shape.png";
+  c1->SaveAs(filename.c_str());
 
   // // Plot correction factor distribution
   // TCanvas *c2 = new TCanvas("C2","C2",1000,800);
