@@ -16,6 +16,37 @@
 #include <cstring>
 using namespace std;
 
+/* 
+This program takes a processed ROOT output file from mpmt_analysis and 
+conducts dark noise and multi-hit event analyses.
+
+This program had been used to solely look at run 838 on the integrated mPMT where
+only channels 4-16 were active.
+
+It will output the following plots and information:
+    Dark noise analysis:
+    - Dark noise pulse height histogram (mpmt_dark_noise_ph.png)
+    - Dark noise pulse time histogram (mpmt_dark_noise_time.png)
+    - Dark noise rate vs active channels graph (mpmt_dark_rate_channel.png)
+    - Dark noise pulses per event histogram (mpmt_dark_noise_count.png)
+    - Prints total run time (command line)
+
+    Multi-hit event analysis:
+    - Histogram of number of hit channels (mpmt_multi_hits.png)
+    - Histogram of number of total hits in active channels during multi-hit events (mpmt_multi_hit_pulses.png)
+    - Histogram of pulse time distribution relative to highest charged pulse in multi-hit events
+    - Prints information on multi-hit event rate and total run time (mpmt_multi_hit_pt_dist.png)
+    - 2D histogram of pulse timing relative to channel x for multi-hit events (mpmt_multi_hit_pt_chx.png) 
+    
+    When optional command line argument of multi-hit event number (i.e. 108036) is provided,
+    the following additional information are printed:
+    - Number of channels with hits 
+    - Maximum and second largest charge detected
+    - All hit channels, pulse time, and pulse charge.
+    - Additionally, graph of pulse time vs active channels is produced (mpmt_multi_hit_108036.png)
+
+*/
+
 const double bin_unit = 0.4883;
 
 int main( int argc, char* argv[] ) {
@@ -48,7 +79,7 @@ int main( int argc, char* argv[] ) {
     
     // Set up for scatter plots
     int n=0;                        // array indexing
-    int num_channels[320000]={0};   // can replace ??
+    int num_channels[320000]={0};
 
     // Set up WaveformFitResults and dark pulse ph histograms for channels 4-15
     TTree* tt[16];
@@ -67,7 +98,7 @@ int main( int argc, char* argv[] ) {
     // Dark rate calculation variabels
     int num_dark_pulses[16]={0};    // total number of dark noise pulses in each channel
     int dark_rates[16];             // dark noise rates indexed by channel
-    double time;                       // total time 
+    double time;                    // total time 
 
     // Multi-hit event rate calculation variables
     int num_multi_hits=0;
@@ -78,6 +109,7 @@ int main( int argc, char* argv[] ) {
     double pulse_range[2] = {0,8192};
     int counter = 0;
 
+    // Construct histograms
     TH1F * max_pulse = new TH1F("largest pulse","Charge distribution of largest pulses in multi-hit events",80,0,80);
     TH1F * sec_pulse = new TH1F("second largest pulse","Charge distribution of first & second largest pulse in every multi-hit event",80,0,80);
 
@@ -95,9 +127,9 @@ int main( int argc, char* argv[] ) {
     // For each event:
     for (int i=0; i<tt[4]->GetEntries()-1; i++) {
         int wf_pulses[16]={0};              // Init array for num pulses per waveform (in channel j)
-        int max_ch = 100;                         // Init int to hold channel number with largest pulse (max charge)
-        double max_charge = 0;                     // Maximum charge in this event
-        double sec_charge = 0;                     // Second largest charge in this event
+        int max_ch = 100;                   // Init int to hold channel number with largest pulse (max charge)
+        double max_charge = 0;              // Maximum charge in this event
+        double sec_charge = 0;              // Second largest charge in this event
         // For each channel:
         for (int j=4; j<=15; j++) {
             tt[j]->GetEvent(i);             // get waveform
@@ -159,7 +191,6 @@ int main( int argc, char* argv[] ) {
         // For each channel:
         for (int j=4; j<=15; j++) {  
             // Count num channels with simultaneous hits
-            // INCLUDE FUNCTION: record the pulse time in each channel relative to the channel with largest pulse
             if (wf_pulses[j]!=0) {
                 for (int c=4; c<=15; c++) {
                     if (wf_pulses[c]==0) continue;          // alt condition for same num pulses: "!=wf_pulses[j]) {" 
