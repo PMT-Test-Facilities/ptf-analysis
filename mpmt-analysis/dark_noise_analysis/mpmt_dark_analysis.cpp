@@ -34,9 +34,10 @@ It will output the following plots and information:
     Multi-hit event analysis:
     - Histogram of number of hit channels (mpmt_multi_hits.png)
     - Histogram of number of total hits in active channels during multi-hit events (mpmt_multi_hit_pulses.png)
-    - Histogram of pulse time distribution relative to highest charged pulse in multi-hit events
-    - Prints information on multi-hit event rate and total run time (mpmt_multi_hit_pt_dist.png)
+    - Histogram of pulse time distribution relative to highest charged pulse in multi-hit events (mpmt_multi_hit_pt_dist.png)
+    - Histogram of first and second largest pulse charges in multi-hit events (mpmt_multi_hit_charge.png)
     - 2D histogram of pulse timing relative to channel x for multi-hit events (mpmt_multi_hit_pt_chx.png) 
+    - Prints information on multi-hit event rate and total run time
     
     When optional command line argument of multi-hit event number (i.e. 108036) is provided,
     the following additional information are printed:
