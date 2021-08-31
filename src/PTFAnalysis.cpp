@@ -662,8 +662,6 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
   outfile->cd();
   // Loop over scan points (index i)
   unsigned long long nfilled = 0;// number of TTree entries so far
-  
-  // int num_pulses = 0;
 
   for (unsigned i = 2; i < wrapper.getNumEntries(); i++) {
     // if ( i>10000) continue;
@@ -729,9 +727,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
         float jitter_correction = injected_times[i]-2080;
         jitter_dist->Fill(jitter_correction);
         if (fitresult->numPulses >0) {
-          // if (num_pulses>)
           for (int k=250; k<320; k++) pulse_shape->Fill(k*8 - jitter_correction, hwaveform->GetBinContent(k));
-          // num_pulses++;
         }
       }
       // ------End average pulse shape analysis------
