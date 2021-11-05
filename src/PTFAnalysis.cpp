@@ -380,7 +380,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     double amplitude;
 
     // ellipitcall modified gaussian
-    if(pmt.channel >= 16){
+    if(pmt.channel >= 1){
       if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",funcEMG,fit_minx-30,fit_maxx+30,5);
       ffitfunc->SetParameters( fitresult->amp, fitresult->mean, 8.0, 1.0, fitresult->ped );
       ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "exp decay", "Offset" );
@@ -400,7 +400,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       
       double sbaseline = 0.9908;
       //      if(pmt.channel == 1){sbaseline = 0.9961; }
-      if(pmt.channel == 1){sbaseline = 1.0034; }
+      if(pmt.channel == 1){sbaseline = 1.0018; }
       if(pmt.channel == 16){sbaseline = 1.0015; }
       //      if(pmt.channel == 17){sbaseline = 0.9932; }
       if(pmt.channel == 17){sbaseline = 0.9975; }
@@ -427,7 +427,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     }
 
     // Bessel fit
-    if(pmt.channel < 16){
+    if(pmt.channel < 1){
 
       fit_minx = min_bin - 8*6.5;
       //fit_maxx = min_bin + 8.0*3.5;
@@ -451,8 +451,8 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       
       
       double sbaseline = 0.9908;
-      if(pmt.channel == 1){sbaseline = 0.9961; }
-      //      if(pmt.channel == 1){sbaseline = 1.0034; }
+      if(pmt.channel == 0){sbaseline = 1.00022; }
+      if(pmt.channel == 1){sbaseline = 1.0034; }
       if(pmt.channel == 16){sbaseline = 1.0015; }
       if(pmt.channel == 17){sbaseline = 0.9932; }
       if(pmt.channel == 18){sbaseline = 1.0044; }   
