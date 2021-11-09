@@ -74,7 +74,7 @@ int main( int argc, char* argv[] ) {
 
   TTree * tt18 = (TTree*)fin->Get("ptfanalysis18");
   WaveformFitResult * wf18 = new WaveformFitResult;
-  wf18->SetBranchAddresses( tt18 );
+  if(tt18) wf18->SetBranchAddresses( tt18 );
   std::cout << "TTree done" << std::endl;
 
   TTree * tt19 = (TTree*)fin->Get("ptfanalysis19");
@@ -84,7 +84,8 @@ int main( int argc, char* argv[] ) {
 
   TH1F *tdiff = new TH1F("time diff","Ch 0 minus Ch 1 time difference",100,-5,1);
   TH1F *tdiff0 = new TH1F("time diff0","PMT0 Time relative to Trigger Time",200,316,326);
-  TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",100,80,90);
+  TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",100,50,60);
+  //TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",100,-200,200);
   //  TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",200,70,80);
   TH1F *tdiff2 = new TH1F("time diff2","timediff2",800,-6,1);
   TH1F *tdiff_inj = new TH1F("time diff inj","Time difference injected pulses",200,-9.3,-8.8);
@@ -149,7 +150,7 @@ int main( int argc, char* argv[] ) {
 
           //pulse_height[j] = (baseline[j] - wf->pulseCharges[k])/0.01;
           //pulse_height[j] = (wf->pulseCharges[k])/0.018 ;
-          pulse_height[j] = (wf->pulseCharges[k])/0.018 ;
+          pulse_height[j] = (wf->pulseCharges[k])/0.014 ;
           //pulse_height[j] = (wf->pulseCharges[k])/0.016;
           //          std::cout << "Pulse Charge: " << wf->pulseCharges[k] << std::endl;
         }
@@ -180,9 +181,9 @@ int main( int argc, char* argv[] ) {
     double cfd_time1 = 0.0;//wf18->sinw;
     double time_diff = 0.0;//time16 - time18;
 
-    if(1 &&  i < 1000)std::cout << i << " Times: " << time18 << " "
+    if(1 &&  i < 1000)std::cout << i << " Times: " << time0 << " "
               << time1 << " "
-              << time1 - time18 << " "
+              << time0 - time1 << " "
               << time1 - time18 -75.6<< " "
               << pulse_height[0] << " "
               << pulse_height[1] << " "
@@ -215,7 +216,7 @@ int main( int argc, char* argv[] ) {
     }// Ch 1 to trigger
 
     int phase = ((int)(time18-0.5)) % 8 ;
-    if(pulse_height[1] < 32.5 && pulse_height[1] > 28.5){
+    if(pulse_height[0] < 1.5 && pulse_height[1] > 0.5){
 
       double extra = 0.0;
       if(phase == 0) extra = 0.16;
@@ -227,7 +228,7 @@ int main( int argc, char* argv[] ) {
       if(phase == 6) extra = 0.07;
       if(phase == 7) extra = 0.18;
 
-      double mtdiff = time1-time18;
+      double mtdiff = time0-time1;
       //double mtdiff = time1-time18 - extra;
 
       //      if(phase == 2 || phase==3)
@@ -243,7 +244,7 @@ int main( int argc, char* argv[] ) {
     }
 
     // check injected pulse timing
-    double tdiff_i = time1-time17;
+    double tdiff_i = time0-time1;
     //std::cout << "Injected: " << tdiff_i << std::endl;
     tdiff_inj->Fill(tdiff_i);
     tdiff_phase_inj[phase]->Fill(tdiff_i);
@@ -335,7 +336,7 @@ int main( int argc, char* argv[] ) {
   TCanvas *c2 = new TCanvas("C2");
   tdiff1->Draw();
   //TF1 *gaus = new TF1("gaus","gaus",321.5,324);
-    TF1 *gaus2 = new TF1("gaus2","gaus",85.5,86.5);
+  TF1 *gaus2 = new TF1("gaus2","gaus",53,54.5);
   //  TF1 *gaus2 = new TF1("gaus2","gaus",74,75.6);
   tdiff1->Fit("gaus2","R");
   tdiff1->SetXTitle("time difference (ns)"); 
@@ -354,7 +355,7 @@ int main( int argc, char* argv[] ) {
   double fwhm = end1-start1;
   std::cout << "mean1 : " << mean1 << " " << hm1 << " " 
             << start1 << " "
-            << end1 << " "
+            << end1 << " fwhm="
             << fwhm
             << " " << tdiff1->GetRMS() << " " 
             << std::endl;
@@ -363,7 +364,7 @@ int main( int argc, char* argv[] ) {
   c2->SaveAs("tdiff_injected1.png");
 
 
-
+  if(0){
   TCanvas *c2inj = new TCanvas("C2inj");
   tdiff_inj->Draw();
   //TF1 *gaus = new TF1("gaus","gaus",321.5,324);
@@ -540,7 +541,7 @@ int main( int argc, char* argv[] ) {
   legp2->Draw("SAME");
 
   c9->SaveAs("tdiff_vs_phase_inj.png");
-  
+  }
   tdiff0->Write();
   fin->Close();
   return 0;
