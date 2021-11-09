@@ -393,8 +393,9 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       //ffitfunc->FixParameter(3, 1 );
       
       
-      ffitfunc->FixParameter(2, 9.6 );
-      	ffitfunc->SetParameter(3, 15.8 );
+      //      ffitfunc->FixParameter(2, 9.6 );
+      ffitfunc->FixParameter(2, 8.48 );
+      ffitfunc->FixParameter(3, 9.8 );
       //ffitfunc->FixParameter(3, 6.0 );
       
       
@@ -410,7 +411,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       amplitude = sbaseline - min_value;
       ffitfunc->SetParameter(0, amplitude*-10.0);
       if(pmt.channel >= 0){
-	ffitfunc->SetParameter(0, amplitude*-0.63);
+	ffitfunc->SetParameter(0, amplitude*-0.0625);
       }
       ffitfunc->FixParameter(4, sbaseline);
       ffitfunc->SetParLimits(0, -1000, 100);
@@ -425,6 +426,14 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
 
       
     }
+
+    if(pmt.channel == 1 && 1)std::cout << "FF " << ffitfunc->GetParameter(0)<< " " 
+				       << ffitfunc->GetParameter(0) / amplitude << " "
+					<< ffitfunc->GetParameter(1)<< " " 
+					<< ffitfunc->GetParameter(2)<< " " 
+					<< ffitfunc->GetParameter(3)<< "   |||||" 
+					<< std::endl;
+
 
     // Bessel fit
     if(pmt.channel < 1){
@@ -470,7 +479,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
 
       double amplitude = sbaseline - min_value;
       //      ffitfunc->SetParameter(0, amplitude*-10.0);
-            ffitfunc->SetParameter(2, -5.6* amplitude );
+      ffitfunc->SetParameter(2, -5.6* amplitude );
       //ffitfunc->SetParameter(2, -1.6* amplitude );
 
       ffitfunc->FixParameter(3, sbaseline);
@@ -483,7 +492,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       // then fit gaussian
       int fitstat = hwaveform->Fit( ffitfunc, "Q", "", fit_minx, fit_maxx);
       
-      if(pmt.channel == 1 && 1) std::cout  << "FF " << ffitfunc->GetParameter(0)<< " "
+      if(pmt.channel == 1 && 1) std::cout  << "FF " << pmt.channel << " " << ffitfunc->GetParameter(0)<< " "
 				     << ffitfunc->GetParameter(1)<< " "
 				     << ffitfunc->GetParameter(2)<< " "
 				     << amplitude << " " 
@@ -494,12 +503,8 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
 
     }
     
-    if(pmt.channel == 17 && 0)std::cout << "FF " << ffitfunc->GetParameter(0)<< " " 
-					<< ffitfunc->GetParameter(1)<< " " 
-					<< ffitfunc->GetParameter(2)<< " " 
-					<< ffitfunc->GetParameter(3)<< "   |||||" 
-					<< std::endl;
-    
+
+      
     if(pmt.channel == 16 && 0){
       p2_top += ffitfunc->GetParameter(2);
       p2_bottom += 1.0;
