@@ -111,12 +111,12 @@ int main( int argc, char* argv[] ) {
   }
 
 
-  TH2F *tdiff_vs_ph = new TH2F("tdiff_vs_ph","Time difference vs pulse height",40,0,0.000488/0.018*80,50,70, 80);
-  TProfile *tdiff_vs_ph_prof = new TProfile("tdiff_vs_ph_prof", "Time difference vs pulse height - Profile", 20,0,0.000488/0.018*80);
+  TH2F *tdiff_vs_ph = new TH2F("tdiff_vs_ph","Time difference vs pulse height",40,0,0.000488/0.012*80,50,70, 80);
+  TProfile *tdiff_vs_ph_prof = new TProfile("tdiff_vs_ph_prof", "Time difference vs pulse height - Profile", 20,0,0.000488/0.012*80);
   
   TH1F *ph[2];
-  ph[0] = new TH1F("PH0","Pulse Heights ",120,0,0.000488/0.018*120);
-  ph[1] = new TH1F("PH1","Pulse Heights",2000,0,0.000488/0.018*2000);
+  ph[0] = new TH1F("PH0","Pulse Heights ",120,0,0.000488/0.012*120);
+  ph[1] = new TH1F("PH1","Pulse Heights",2000,0,0.000488/0.012*2000);
   std::cout << "Looping tree " << tt0->GetEntries() << " " << tt1->GetEntries() << std::endl;
   int total_hits0 = 0, success_fits0 = 0;
   int total_hits1 = 0, success_fits1 = 0;
@@ -150,7 +150,7 @@ int main( int argc, char* argv[] ) {
 
           //pulse_height[j] = (baseline[j] - wf->pulseCharges[k])/0.01;
           //pulse_height[j] = (wf->pulseCharges[k])/0.018 ;
-          pulse_height[j] = (wf->pulseCharges[k])/0.014 ;
+          pulse_height[j] = (wf->pulseCharges[k])/0.012 ;
           //pulse_height[j] = (wf->pulseCharges[k])/0.016;
           //          std::cout << "Pulse Charge: " << wf->pulseCharges[k] << std::endl;
         }
@@ -363,6 +363,21 @@ int main( int argc, char* argv[] ) {
 
   c2->SaveAs("tdiff_injected1.png");
 
+    TCanvas *c3 = new TCanvas("C3");
+  ph[0]->Draw();
+  ph[0]->SetXTitle("Pulse height (PE)");
+
+  //  ph[1]->Draw("SAME");
+  //ph[1]->SetLineColor(2);
+
+  TLegend *leg = new TLegend(0.5,0.7,0.79,0.89);
+  leg->AddEntry(ph[0],"Channel 0");
+  leg->AddEntry(ph[1],"Channel 1");
+  leg->Draw("SAME");    
+  
+  c3->SaveAs("pulse_heights.png");
+
+
 
   if(0){
   TCanvas *c2inj = new TCanvas("C2inj");
@@ -394,20 +409,6 @@ int main( int argc, char* argv[] ) {
 
   c2inj->SaveAs("tdiff_injected_injected.png");
 
-
-  TCanvas *c3 = new TCanvas("C3");
-  ph[1]->Draw();
-  ph[1]->SetXTitle("Pulse height (PE)");
-
-  //  ph[1]->Draw("SAME");
-  //ph[1]->SetLineColor(2);
-
-  TLegend *leg = new TLegend(0.5,0.7,0.79,0.89);
-  leg->AddEntry(ph[0],"Channel 0");
-  leg->AddEntry(ph[1],"Channel 1");
-  leg->Draw("SAME");    
-  
-  c3->SaveAs("pulse_heights.png");
 
 
   TCanvas *c4 = new TCanvas("C4");
