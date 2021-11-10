@@ -427,7 +427,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       
     }
 
-    if(pmt.channel == 1 && 1)std::cout << "FF " << ffitfunc->GetParameter(0)<< " " 
+    if(pmt.channel == 1 && 0)std::cout << "FF " << ffitfunc->GetParameter(0)<< " " 
 				       << ffitfunc->GetParameter(0) / amplitude << " "
 					<< ffitfunc->GetParameter(1)<< " " 
 					<< ffitfunc->GetParameter(2)<< " " 
@@ -440,7 +440,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
 
       fit_minx = min_bin - 8*6.5;
       //fit_maxx = min_bin + 8.0*3.5;
-      fit_maxx = min_bin + 8.0*0.5;
+      fit_maxx = min_bin + 8.0*2.5;
       
 
       if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",bessel,fit_minx-32,fit_maxx+36,5);
@@ -455,9 +455,10 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       //ffitfunc->FixParameter(4, 0.5 );
       //      ffitfunc->SetParameter(0, 0.113 ); // 1PE
       //ffitfunc->SetParameter(4, 0.5 ); // 1PE
-      ffitfunc->FixParameter(0, 0.113 ); // 32PE
-      ffitfunc->FixParameter(4, -0.3 ); // 32PE
-      
+      //ffitfunc->SetParameter(0, 0.113 ); // 32PE
+      //ffitfunc->SetParameter(4, -0.3 ); // 32PE
+      ffitfunc->FixParameter(0, 0.121 ); // 1PE Nov 2021
+      ffitfunc->FixParameter(4, -0.2 ); // 1PE Nov 2021
       
       double sbaseline = 0.9908;
       if(pmt.channel == 0){sbaseline = 1.00022; }
@@ -479,7 +480,8 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
 
       double amplitude = sbaseline - min_value;
       //      ffitfunc->SetParameter(0, amplitude*-10.0);
-      ffitfunc->SetParameter(2, -5.6* amplitude );
+      //ffitfunc->SetParameter(2, -5.6* amplitude );
+      ffitfunc->SetParameter(2, -3* amplitude ); // Nov 2021
       //ffitfunc->SetParameter(2, -1.6* amplitude );
 
       ffitfunc->FixParameter(3, sbaseline);
@@ -492,7 +494,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       // then fit gaussian
       int fitstat = hwaveform->Fit( ffitfunc, "Q", "", fit_minx, fit_maxx);
       
-      if(pmt.channel == 1 && 1) std::cout  << "FF " << pmt.channel << " " << ffitfunc->GetParameter(0)<< " "
+      if(pmt.channel == 0 && 1) std::cout  << "FF " << pmt.channel << " " << ffitfunc->GetParameter(0)<< " "
 				     << ffitfunc->GetParameter(1)<< " "
 				     << ffitfunc->GetParameter(2)<< " "
 				     << amplitude << " " 
