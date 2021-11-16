@@ -84,7 +84,7 @@ int main( int argc, char* argv[] ) {
 
   TH1F *tdiff = new TH1F("time diff","Ch 0 minus Ch 1 time difference",100,-5,1);
   TH1F *tdiff0 = new TH1F("time diff0","PMT0 Time relative to Trigger Time",200,316,326);
-  TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",100,50,60);
+  TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",100,53,63);
   //TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",100,-200,200);
   //  TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",200,70,80);
   TH1F *tdiff2 = new TH1F("time diff2","timediff2",800,-6,1);
@@ -336,7 +336,7 @@ int main( int argc, char* argv[] ) {
   TCanvas *c2 = new TCanvas("C2");
   tdiff1->Draw();
   //TF1 *gaus = new TF1("gaus","gaus",321.5,324);
-  TF1 *gaus2 = new TF1("gaus2","gaus",53,54.5);
+  TF1 *gaus2 = new TF1("gaus2","gaus",55.5,57);
   //  TF1 *gaus2 = new TF1("gaus2","gaus",74,75.6);
   tdiff1->Fit("gaus2","R");
   tdiff1->SetXTitle("time difference (ns)"); 
