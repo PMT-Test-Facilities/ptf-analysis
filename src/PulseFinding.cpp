@@ -31,7 +31,7 @@ void simple_threshold_technique(TH1D *hwaveform, WaveformFitResult *fitresult, P
   if(pmt.channel == 16){ baseline = 1.0015; }
   if(pmt.channel == 17){ baseline = 0.9932; }
 
-  double threshold = baseline - 0.004;
+  double threshold = baseline - 0.001;
     
     if (pmt.channel == 1) threshold = baseline - 0.2;
 
