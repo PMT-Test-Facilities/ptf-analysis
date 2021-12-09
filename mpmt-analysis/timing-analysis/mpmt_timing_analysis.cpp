@@ -84,7 +84,7 @@ int main( int argc, char* argv[] ) {
 
   TH1F *tdiff = new TH1F("time diff","Ch 0 minus Ch 1 time difference",100,-5,1);
   TH1F *tdiff0 = new TH1F("time diff0","PMT0 Time relative to Trigger Time",200,316,326);
-  TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",100,53,63);
+  TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",100,51,61);
   //TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",100,-200,200);
   //  TH1F *tdiff1 = new TH1F("time diff1","PMT1 Time relative to Trigger Time",200,70,80);
   TH1F *tdiff2 = new TH1F("time diff2","timediff2",800,-6,1);
@@ -115,7 +115,8 @@ int main( int argc, char* argv[] ) {
   TProfile *tdiff_vs_ph_prof = new TProfile("tdiff_vs_ph_prof", "Time difference vs pulse height - Profile", 20,0,0.000488/0.012*80);
   
   TH1F *ph[2];
-  ph[0] = new TH1F("PH0","Pulse Heights ",120,0,0.000488/0.012*120);
+  ph[0] = new TH1F("PH0", "Pulse Heights", 120, 0, 0.000488 * 120 * 1000);
+  // ph[0] = new TH1F("PH0","Pulse Heights ",180,0,0.000488/0.012*120*14.64);
   ph[1] = new TH1F("PH1","Pulse Heights",2000,0,0.000488/0.012*2000);
   std::cout << "Looping tree " << tt0->GetEntries() << " " << tt1->GetEntries() << std::endl;
   int total_hits0 = 0, success_fits0 = 0;
@@ -150,7 +151,7 @@ int main( int argc, char* argv[] ) {
 
           //pulse_height[j] = (baseline[j] - wf->pulseCharges[k])/0.01;
           //pulse_height[j] = (wf->pulseCharges[k])/0.018 ;
-          pulse_height[j] = (wf->pulseCharges[k])/0.012 ;
+          pulse_height[j] = wf->pulseCharges[k] * 1000;
           //pulse_height[j] = (wf->pulseCharges[k])/0.016;
           //          std::cout << "Pulse Charge: " << wf->pulseCharges[k] << std::endl;
         }
@@ -336,7 +337,7 @@ int main( int argc, char* argv[] ) {
   TCanvas *c2 = new TCanvas("C2");
   tdiff1->Draw();
   //TF1 *gaus = new TF1("gaus","gaus",321.5,324);
-  TF1 *gaus2 = new TF1("gaus2","gaus",55.5,57);
+  TF1 *gaus2 = new TF1("gaus2","gaus",53,55);
   //  TF1 *gaus2 = new TF1("gaus2","gaus",74,75.6);
   tdiff1->Fit("gaus2","R");
   tdiff1->SetXTitle("time difference (ns)"); 
@@ -365,15 +366,30 @@ int main( int argc, char* argv[] ) {
 
     TCanvas *c3 = new TCanvas("C3");
   ph[0]->Draw();
-  ph[0]->SetXTitle("Pulse height (PE)");
+  ph[0]->SetXTitle("Pulse height (mV)");
 
-  //  ph[1]->Draw("SAME");
-  //ph[1]->SetLineColor(2);
+  // Gaussian fit of pulse height distribution
+  TF1 *f0 = new TF1("f0", "gaus", 6, 18);
+  // TF1 *f1 = new TF1("f1", "gaus", 14, 16);
+  // TF1 *total = new TF1("total", "gaus(0) + gaus(3)", 3, 16);
+  // f0->SetParameters(1600, 7, 3);
+  ph[0]->Fit(f0, "R");
+  // ph[0]->Fit(f1, "R+");
 
-  TLegend *leg = new TLegend(0.5,0.7,0.79,0.89);
-  leg->AddEntry(ph[0],"Channel 0");
-  leg->AddEntry(ph[1],"Channel 1");
-  leg->Draw("SAME");    
+  // double *par;
+  // f0->GetParameters(&par[0]);
+  // f1->GetParameters(&par[3]);
+
+  // total->SetParameters(par);
+  // ph[0]->Fit(total, "R+");
+
+  // ph[1]->Draw("SAME");
+  // ph[1]->SetLineColor(2);
+
+  // TLegend *leg = new TLegend(0.5,0.7,0.79,0.89);
+  // leg->AddEntry(ph[0],"Channel 0");
+  // leg->AddEntry(ph[1],"Channel 1");
+  // leg->Draw("SAME");    
   
   c3->SaveAs("pulse_heights.png");
 
@@ -547,4 +563,3 @@ int main( int argc, char* argv[] ) {
   fin->Close();
   return 0;
 }
-
