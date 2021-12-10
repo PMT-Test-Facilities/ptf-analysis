@@ -115,8 +115,8 @@ int main( int argc, char* argv[] ) {
   TProfile *tdiff_vs_ph_prof = new TProfile("tdiff_vs_ph_prof", "Time difference vs pulse height - Profile", 20,0,0.000488/0.012*80);
   
   TH1F *ph[2];
-  ph[0] = new TH1F("PH0", "Pulse Heights", 120, 0, 0.000488 * 120 * 1000);
-  // ph[0] = new TH1F("PH0","Pulse Heights ",180,0,0.000488/0.012*120*14.64);
+  // ph[0] = new TH1F("PH0", "Pulse Heights", 120, 0, 0.000488 * 120 * 1000);
+  ph[0] = new TH1F("PH0","Pulse Heights ",180,0,0.000488/0.012*120);
   ph[1] = new TH1F("PH1","Pulse Heights",2000,0,0.000488/0.012*2000);
   std::cout << "Looping tree " << tt0->GetEntries() << " " << tt1->GetEntries() << std::endl;
   int total_hits0 = 0, success_fits0 = 0;
@@ -151,7 +151,7 @@ int main( int argc, char* argv[] ) {
 
           //pulse_height[j] = (baseline[j] - wf->pulseCharges[k])/0.01;
           //pulse_height[j] = (wf->pulseCharges[k])/0.018 ;
-          pulse_height[j] = wf->pulseCharges[k] * 1000;
+          pulse_height[j] = (wf->pulseCharges[k])/0.012;
           //pulse_height[j] = (wf->pulseCharges[k])/0.016;
           //          std::cout << "Pulse Charge: " << wf->pulseCharges[k] << std::endl;
         }
