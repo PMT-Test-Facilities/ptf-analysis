@@ -81,7 +81,7 @@ bool PTFAnalysis::FFTCut(){
   double maxValue = hfftm->GetBinContent(maxBin);
   fitresult->fftmaxbin = maxBin;
   fitresult->fftmaxval = maxValue;
-  if( maxValue > 0.01 && ((maxBin > 1 && maxBin <= 4) || (maxBin >= nbins-3 && maxBin <= nbins)) ){
+  if( maxValue > 80.0 && ((maxBin > 1 && maxBin <= 4) || (maxBin >= nbins-3 && maxBin <= nbins)) ){
     return true;
   }
   else{
@@ -215,51 +215,51 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
   // Fit waveform for main PMT
   if( pmt.type == PTF::Hamamatsu_R3600_PMT ){
     // check if we need to build the function to fit
-    if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",pmt0_gaussian,0,140,7);
-    ffitfunc->SetParameters( 1.0e-4, 70.0, 5.2, 1.0, 1.0e-3, 0.25, 0.0 );
+    if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",pmt0_gaussian,0,70,7);
+    ffitfunc->SetParameters( 1.0, 32.0, 3.6, 8135.0, 10.0, 0.5, 0.0 );
     ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "Offset",
       		 "Sine-Amp",  "Sin-Freq", "Sin-Phase" );
 
-    ffitfunc->SetParLimits(0, 0.0, 1.0);
-    ffitfunc->SetParLimits(1, 2.0, 138.0 );
-    ffitfunc->SetParLimits(2, 0.5, 20.0 );
-    ffitfunc->SetParLimits(3, 0.9, 1.1 );
-    ffitfunc->SetParLimits(4, 0.0, 1.1);
-    ffitfunc->SetParLimits(5, 0.2, 0.35);
+    ffitfunc->SetParLimits(0, 0.0, 8500);
+    ffitfunc->SetParLimits(1, 20, 50.0 );
+    ffitfunc->SetParLimits(2, 0.25, 10.0 );
+    ffitfunc->SetParLimits(3, 7500, 8500 );
+    ffitfunc->SetParLimits(4, 0.0, 8500);
+    ffitfunc->SetParLimits(5, 0.4, 0.7);
     ffitfunc->SetParLimits(6, -TMath::Pi(), TMath::Pi() );
  
     // first fit for sine wave:
-    ffitfunc->FixParameter(0,1.0e-4);
-    ffitfunc->FixParameter(1,70.0);
-    ffitfunc->FixParameter(2,5.2);
-    hwaveform->Fit( ffitfunc, "Q", "", 0,60.0);
+    ffitfunc->FixParameter(0,1.0);
+    ffitfunc->FixParameter(1,32.0);
+    ffitfunc->FixParameter(2,3.6);
+    hwaveform->Fit( ffitfunc, "Q", "", 0,30.0);
 
     // then fit gaussian
     ffitfunc->ReleaseParameter(0);
     ffitfunc->ReleaseParameter(1);
     ffitfunc->ReleaseParameter(2);
-    ffitfunc->SetParLimits(0, 0.0, 1.1);
-    ffitfunc->SetParLimits(1, 2.0, 138.0 );
-    ffitfunc->SetParLimits(2, 0.5, 20.0 );
+    ffitfunc->SetParLimits(0, 0.0, 8500.0);
+    ffitfunc->SetParLimits(1, 20.0, 50.0 );
+    ffitfunc->SetParLimits(2, 0.25, 10.0 );
     ffitfunc->FixParameter(3, ffitfunc->GetParameter(3) );
     ffitfunc->FixParameter(4, ffitfunc->GetParameter(4));
     ffitfunc->FixParameter(5, ffitfunc->GetParameter(5));
     ffitfunc->FixParameter(6, ffitfunc->GetParameter(6));
-    hwaveform->Fit( ffitfunc, "Q", "", 40.0, 100.0);
+    hwaveform->Fit( ffitfunc, "Q", "", 20.0, 50.0);
 
     // then fit sine and gaussian together
     ffitfunc->ReleaseParameter(3);
     ffitfunc->ReleaseParameter(4);
     ffitfunc->ReleaseParameter(5);
     ffitfunc->ReleaseParameter(6);
-    ffitfunc->SetParLimits(0, 0.0, 1.1);
-    ffitfunc->SetParLimits(1, 2.0, 138.0 );
-    ffitfunc->SetParLimits(2, 0.5, 20.0 );
-    ffitfunc->SetParLimits(3, 0.9, 1.1 );
-    ffitfunc->SetParLimits(4, 0.0, 1.1);
-    ffitfunc->SetParLimits(5, 0.2, 0.35);
+    ffitfunc->SetParLimits(0, 0.0, 8500.0);
+    ffitfunc->SetParLimits(1, 2.0, 50.0 );
+    ffitfunc->SetParLimits(2, 0.25, 10.0 );
+    ffitfunc->SetParLimits(3, 7500, 8500 );
+    ffitfunc->SetParLimits(4, 0.0, 8500);
+    ffitfunc->SetParLimits(5, 0.4, 0.7);
     ffitfunc->SetParLimits(6, -TMath::Pi(), TMath::Pi() );
-    int fitstat = hwaveform->Fit( ffitfunc, "Q", "", 0, 140);
+    int fitstat = hwaveform->Fit( ffitfunc, "Q", "", 0, 70);
     // collect fit results
     fitresult->ped       = ffitfunc->GetParameter(3);
     fitresult->mean      = ffitfunc->GetParameter(1);

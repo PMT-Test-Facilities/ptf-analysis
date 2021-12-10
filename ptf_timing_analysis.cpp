@@ -31,6 +31,14 @@
 
 using namespace std;
 
+double my_gaussian(double *x, double *par) {
+  double arg=0;
+  if(par[2]!=0) arg=(x[0]-par[1])/par[2];
+  double gfunc=par[0] * TMath::Exp( -0.5*arg*arg );
+  return gfunc;
+}
+
+
 int main( int argc, char* argv[] ) {
 
   if ( argc != 3 ){
@@ -185,9 +193,19 @@ int main( int argc, char* argv[] ) {
     //std::cout<<"Fitting "<<fname.str()
 	//     <<" with "<<h_pmt0_tscanpt[iscan]->GetEntries()
 	//     <<std::endl;
-    TF1* ftmp = new TF1( fname.str().c_str(), "gaus", 20., 50. );
-    h_pmt0_tscanpt[iscan]->Fit( ftmp, "Q" );
-    vecpmtresponse.push_back( ftmp );
+    TF1* ftmp = new TF1( fname.str().c_str(), "mygaussian", 20., 50.,3 );
+    ftmp->SetParNames("Amplitude","Mean","Sigma");
+    ftmp->SetParameter(0, 20.);
+    ftmp->SetParameter(1, 35.);
+    ftmp->SetParameter(2, 5.);
+    ftmp->SetParLimits(0, 0.0, 5000.0);
+    ftmp->SetParLimits(1, 28.0, 45.0 );
+    ftmp->SetParLimits(2, 0.0, 100.0 );
+    h_pmt0_tscanpt[iscan]->Fit( ftmp, "Q", "", 20., 50. );
+       vecpmtresponse.push_back( ftmp );
+   	
+	//h_pmt0_tscanpt[iscan]->Fit( ftmp, "Q" );
+    //vecpmtresponse.push_back( ftmp );
     //if( ftmp->GetParameter(1) > 25. &&
     //  ftmp->GetParameter(1) < min_time ) min_time = ftmp->GetParameter(1);
   }
