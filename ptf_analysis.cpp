@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
 
   // Set up PTF Wrapper
   vector<int> phidgets = {0, 1, 3};
-  PTF::PMT PMT0 = {0,0,PTF::Hamamatsu_R3600_PMT}; // only looking at one PMT at a time
+  PTF::PMT PMT0 = {0,5,PTF::Hamamatsu_R3600_PMT}; // only looking at one PMT at a time, previously channel
   PTF::PMT PMT1 = {1,5,PTF::PTF_Monitor_PMT}; // only looking at one PMT at a time
   PTF::PMT REF = {2,1,PTF::Reference}; // only looking at one PMT at a time
   vector<PTF::PMT> activePMTs = { PMT0, PMT1, REF }; // must be ordered {main,monitor}
