@@ -324,7 +324,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     fitresult->amp = amp;
     fitresult->mean = mean;
   }
-  else if( pmt.type == PTF::Reference ){
+  else if( pmt.type == PTF::Reference ){ //What exactly is PTF reference ?
     float mean = 0.0;
     for( int ibin = 1; ibin<=hwaveform->GetNbinsX(); ibin++ ){
       if( hwaveform->GetBinContent( ibin ) < 0.5 ){
@@ -357,7 +357,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
   //  fitresult->prob      = TMath::Prob( ffitfunc->GetChisquare(), 30-5 );
   //  fitresult->fitstat   = fitstat;
   //}
-  else if( pmt.type == PTF::mPMT_REV0_PMT ){ /// Add a new PMT type for the mPMT analysis.
+  else if( pmt.type == PTF::mPMT_REV0_PMT ){ /// Add a new PMT type for the mPMT analysis. ensure PTF won't get into this
 
     // Find the mininum bin between 2040.0ns (bin 255) and  2320.0ns (bin 290)
     double min_bin = 2400;
@@ -527,7 +527,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     fitresult->prob      = TMath::Prob( ffitfunc->GetChisquare(), 30-4 );
 
     fitresult->fitstat   = fitstat;
-
+	
     // Do CFD analysis on the fitted pulse
     double baseline = ffitfunc->GetParameter(4);
     if(pmt.channel == 0) baseline = 0.991;
