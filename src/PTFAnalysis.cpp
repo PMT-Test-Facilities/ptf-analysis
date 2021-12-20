@@ -215,13 +215,13 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
   // Fit waveform for main PMT
   if( pmt.type == PTF::Hamamatsu_R3600_PMT ){
     // check if we need to build the function to fit
-    if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",pmt0_gaussian,0,70,7);
-    ffitfunc->SetParameters( 1.0, 32.0, 3.6, 8135.0, 10.0, 0.5, 0.0 );
+    if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",pmt0_gaussian,0,140,7);
+    ffitfunc->SetParameters( 1.0, 85, 3.6, 8135.0, 10.0, 0.5, 0.0 );
     ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "Offset",
       		 "Sine-Amp",  "Sin-Freq", "Sin-Phase" );
 
     ffitfunc->SetParLimits(0, 0.0, 8500);
-    ffitfunc->SetParLimits(1, 20, 50.0 );
+    ffitfunc->SetParLimits(1, 80, 100 );
     ffitfunc->SetParLimits(2, 0.25, 10.0 );
     ffitfunc->SetParLimits(3, 7500, 8500 );
     ffitfunc->SetParLimits(4, 0.0, 8500);
@@ -750,7 +750,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
            //   std::cout << "Success:" << std::endl;
           std::string hwfname = "hwf_" + std::to_string( nfilled );
           std::string hfftmname = "hfftm_" + std::to_string( nfilled );
-          if ( fitresult->haswf && savewf_count<1000 ) {
+          if ( fitresult->haswf && savewf_count<500 )//1000 {
             wfdir->cd();
             TH1D* hwf = (TH1D*) hwaveform->Clone( hwfname.c_str() );
             hwf->SetName( hwfname.c_str() );
@@ -762,7 +762,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
             hfftm_tmp->SetTitle("HAS a pulse; Frequency; Coefficient");
             hfftm_tmp->SetDirectory( wfdir_fft );
             ++savewf_count;	  
-          } else if ( !fitresult->haswf && savenowf_count<1000 ){
+          } else if ( !fitresult->haswf && savenowf_count<500 )//1000{
             nowfdir->cd();
             TH1D* hwf = (TH1D*) hwaveform->Clone( hwfname.c_str() );
             hwf->SetName( hwfname.c_str() );
