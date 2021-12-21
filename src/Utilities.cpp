@@ -175,6 +175,7 @@ bool Utilities::HasWaveform( WaveformFitResult *wf, int pmt ){
     // cut on chi2
     //if ( wf->chi2 > 200.0 ) return false;
   }
+  /*
   if( pmt == 1 ){
   //    // Checks if monitor (PMT1) is being fitted
   //    // check if fit is valid
@@ -190,5 +191,6 @@ bool Utilities::HasWaveform( WaveformFitResult *wf, int pmt ){
   //    // Checks if using simpler analysis of bin furthest from pedestal
   //    if ( fitresult->amp < 25.0 ) return false;
   //  }
+  */
   return true;
 }

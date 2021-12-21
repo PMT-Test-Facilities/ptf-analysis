@@ -216,12 +216,12 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
   if( pmt.type == PTF::Hamamatsu_R3600_PMT ){
     // check if we need to build the function to fit
     if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",pmt0_gaussian,0,140,7);
-    ffitfunc->SetParameters( 1.0, 85, 3.6, 8135.0, 10.0, 0.5, 0.0 );
+    ffitfunc->SetParameters( 1.0, 70, 3.6, 8135.0, 10.0, 0.5, 0.0 );
     ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "Offset",
       		 "Sine-Amp",  "Sin-Freq", "Sin-Phase" );
 
     ffitfunc->SetParLimits(0, 0.0, 8500);
-    ffitfunc->SetParLimits(1, 80, 100 );
+    ffitfunc->SetParLimits(1, 2, 138 );
     ffitfunc->SetParLimits(2, 0.25, 10.0 );
     ffitfunc->SetParLimits(3, 7500, 8500 );
     ffitfunc->SetParLimits(4, 0.0, 8500);
@@ -230,22 +230,22 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
  
     // first fit for sine wave:
     ffitfunc->FixParameter(0,1.0);
-    ffitfunc->FixParameter(1,32.0);
+    ffitfunc->FixParameter(1,70);
     ffitfunc->FixParameter(2,3.6);
-    hwaveform->Fit( ffitfunc, "Q", "", 0,30.0);
+    hwaveform->Fit( ffitfunc, "Q", "", 0,60.0);
 
     // then fit gaussian
     ffitfunc->ReleaseParameter(0);
     ffitfunc->ReleaseParameter(1);
     ffitfunc->ReleaseParameter(2);
     ffitfunc->SetParLimits(0, 0.0, 8500.0);
-    ffitfunc->SetParLimits(1, 20.0, 50.0 );
+    ffitfunc->SetParLimits(1, 2.0, 138.0 );
     ffitfunc->SetParLimits(2, 0.25, 10.0 );
     ffitfunc->FixParameter(3, ffitfunc->GetParameter(3) );
     ffitfunc->FixParameter(4, ffitfunc->GetParameter(4));
     ffitfunc->FixParameter(5, ffitfunc->GetParameter(5));
     ffitfunc->FixParameter(6, ffitfunc->GetParameter(6));
-    hwaveform->Fit( ffitfunc, "Q", "", 20.0, 50.0);
+    hwaveform->Fit( ffitfunc, "Q", "", 40.0, 100.0);
 
     // then fit sine and gaussian together
     ffitfunc->ReleaseParameter(3);
@@ -253,13 +253,13 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     ffitfunc->ReleaseParameter(5);
     ffitfunc->ReleaseParameter(6);
     ffitfunc->SetParLimits(0, 0.0, 8500.0);
-    ffitfunc->SetParLimits(1, 2.0, 50.0 );
+    ffitfunc->SetParLimits(1, 2.0, 138.0 );
     ffitfunc->SetParLimits(2, 0.25, 10.0 );
     ffitfunc->SetParLimits(3, 7500, 8500 );
     ffitfunc->SetParLimits(4, 0.0, 8500);
     ffitfunc->SetParLimits(5, 0.4, 0.7);
     ffitfunc->SetParLimits(6, -TMath::Pi(), TMath::Pi() );
-    int fitstat = hwaveform->Fit( ffitfunc, "Q", "", 0, 70);
+    int fitstat = hwaveform->Fit( ffitfunc, "Q", "", 0, 140);
     // collect fit results
     fitresult->ped       = ffitfunc->GetParameter(3);
     fitresult->mean      = ffitfunc->GetParameter(1);
@@ -707,7 +707,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
         hwaveform->SetBinContent( ibin, pmtsample[ibin-1] );
 	    hwaveform->SetBinError( ibin, errorbar );
       }
-      hwaveform->Scale(digi.fullScaleRange/digiCounts);
+      //hwaveform->Scale(digi.fullScaleRange/digiCounts);
       InitializeFitResult( j, numWaveforms );
       
       // Do pulse finding (if requested)
@@ -750,7 +750,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
            //   std::cout << "Success:" << std::endl;
           std::string hwfname = "hwf_" + std::to_string( nfilled );
           std::string hfftmname = "hfftm_" + std::to_string( nfilled );
-          if ( fitresult->haswf && savewf_count<500 )//1000 {
+          if ( fitresult->haswf && savewf_count<500 ) {
             wfdir->cd();
             TH1D* hwf = (TH1D*) hwaveform->Clone( hwfname.c_str() );
             hwf->SetName( hwfname.c_str() );
@@ -762,7 +762,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
             hfftm_tmp->SetTitle("HAS a pulse; Frequency; Coefficient");
             hfftm_tmp->SetDirectory( wfdir_fft );
             ++savewf_count;	  
-          } else if ( !fitresult->haswf && savenowf_count<500 )//1000{
+          } else if ( !fitresult->haswf && savenowf_count<500 ){
             nowfdir->cd();
             TH1D* hwf = (TH1D*) hwaveform->Clone( hwfname.c_str() );
             hwf->SetName( hwfname.c_str() );
