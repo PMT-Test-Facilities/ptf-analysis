@@ -63,7 +63,7 @@ private:
   //std::vector< ScanPoint > Temperature;
   //TF1* fmygauss{nullptr};  // gaussian function used to fit waveform
   TF1* ffitfunc{nullptr};  // function used to fit waveform
-
+  TH1D* butterworth_filter{nullptr};
   TH1D* hwaveform{nullptr}; // current waveform
   TH1* hfftm{nullptr}; // fast fourier transform magnitude
   WaveformFitResult * fitresult{nullptr};
