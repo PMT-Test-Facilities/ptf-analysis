@@ -719,7 +719,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
 
 //       Do simple charge sum calculation
         if( pmt.pmt == 0 ) {
-            ChargeSum(0.9931); //original PTF function call here
+            ChargeSum(8135.4); //original PTF function call here
         }
         
         // Added by Yuka June 2021 for PMT pulse charge calculation
