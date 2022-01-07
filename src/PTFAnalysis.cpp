@@ -36,6 +36,16 @@ void PTFAnalysis::ChargeSum( float ped, int bin_low, int bin_high ){
     }
     fitresult->qsum = sum;
 }
+void PTFAnalysis::ChargeSumPTF( float ped){
+  fitresult->qped = ped;
+  float sum = 0.;
+  for( int ibin = 1; ibin<=hwaveform->GetNbinsX(); ibin++ ){
+    sum += ped - hwaveform->GetBinContent( ibin );
+  }
+  fitresult->qsum = sum;
+}
+
+ 
 
 bool PTFAnalysis::MonitorCut( float cut ){
   float ped = 0.0;
@@ -719,7 +729,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
 
 //       Do simple charge sum calculation
         if( pmt.pmt == 0 ) {
-            ChargeSum(8135.4); //original PTF function call here
+            ChargeSumPTF(8135.4); //original PTF function call here
         }
         
         // Added by Yuka June 2021 for PMT pulse charge calculation

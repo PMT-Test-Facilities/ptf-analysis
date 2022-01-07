@@ -44,6 +44,7 @@ public:
   
 private:
   void ChargeSum( float ped, int bin_low=1, int bin_high=0 ); // Charge sum relative to ped
+  void ChargeSumPTF( float ped);
   bool MonitorCut( float cut ); // Cut if no monitor PMT pulse
   bool FFTCut(); // Do FFT and check if waveform present
   bool PulseLocationCut( int cut ); // Cut on pulse in first or last bins
