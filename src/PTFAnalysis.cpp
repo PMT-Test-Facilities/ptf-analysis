@@ -72,6 +72,78 @@ bool PTFAnalysis::MonitorCut( float cut ){
   }
 }
 
+void PTFAnalysis::ButterwothFilter(double w_cuffoff){
+
+  int nbins = hwaveform->GetNbinsX();
+  double range = hwaveform->GetXaxis()->GetXmax() - hwaveform->GetXaxis()->GetXmin();
+  int N = 3;//order                                                                                                                                                                                                                                                             
+  int n = nbins-1;
+  double sampling_rate = 500e6;//MHz                                                                                                                                                                                                                                            
+
+  double w_0 = w_cuffoff*1e6;
+  double to_w = sampling_rate/n;
+
+  if(butterworth_filter==nullptr){
+    butterworth_filter = new TH1D("signal","signal",nbins,0.0,sampling_rate);
+
+    for(int i = 0; i < nbins; i++){
+      double G = 0.0;
+      double w = i*to_w;
+    if(w < w_0-1){
+      G=1.0;
+    }else{
+      G = 1/sqrt( 1+TMath::Power(w-w_0+1,2*N) );
+    }
+      butterworth_filter->SetBinContent(i,G);
+    }
+  }
+
+  TVirtualFFT::SetTransform(0);
+
+  TH1* hm = 0;
+  hm = hwaveform->FFT(hm, "MAG");
+  TVirtualFFT *fft = TVirtualFFT::GetCurrentTransform();
+
+  //Use the following method to get the full output:                                                                                                                                                                                                                            
+  Double_t *re_full = new Double_t[n];
+  Double_t *im_full = new Double_t[n];
+  fft->GetPointsComplex(re_full,im_full);
+
+  for(int i = 0; i < nbins-1; i++){
+      double fft_value = hm->GetBinContent(i);
+      //hm->GetXAxis()->SetRange(0,100.0/range)                                                                                                                                                                                                                                 
+      double G = butterworth_filter->GetBinContent(i);
+      hm->SetBinContent(i, fft_value*G/sqrt(n));
+
+      re_full[i]*=G/sqrt(n);
+      im_full[i]*=G/sqrt(n);
+  }
+//Now let's make a backward transform:                                                                                                                                                                                                                                        
+  TVirtualFFT *fft_back = TVirtualFFT::FFT(1, &n, "C2R M K");
+  fft_back->SetPointsComplex(re_full,im_full);
+  fft_back->Transform();
+  TH1D *hb = new TH1D("revers","revers",nbins-1,0.0,range);
+  //Let's look at the output                                                                                                                                                                                                                                                    
+  hb = (TH1D*)TH1D::TransformHisto(fft_back,hb,"Re");
+  hb->Scale(1/sqrt(n));
+
+  // copy to new waveform                                                                                                                                                                                                                                                       
+  // TODO: kinda slow, make faster                                                                                                                                                                                                                                              
+  for(int i = 0; i < hb->GetNbinsX(); i++)
+    hwaveform->SetBinContent(i,hb->GetBinContent(i));
+    //hb->SetBinError(i,result->GetBinError(1));                                                                                                                                                                                                                                
+
+  hm->Delete();
+  hb->Delete();
+  fft->Delete();
+  fft_back->Delete();
+
+  delete [] re_full;
+  delete [] im_full;
+
+}
+
+
 bool PTFAnalysis::FFTCut(){
   // Compute the transform
   TVirtualFFT::SetTransform(0);
@@ -746,6 +818,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
       if( dofit && fft_cut && pmt.pmt == 0 ) dofit = FFTCut();
       //if( dofit && pmt.pmt == 1 ) dofit = MonitorCut( 25. );
 	  dofit = true;
+	  ButterwothFilter(28.0);//MHz, apply the filter  
       if( dofit ){
         FitWaveform( j, numWaveforms, pmt ); // Fit waveform and copy fit results into TTree
       }

@@ -49,7 +49,7 @@ private:
   bool FFTCut(); // Do FFT and check if waveform present
   bool PulseLocationCut( int cut ); // Cut on pulse in first or last bins
   void InitializeFitResult( int wavenum, int nwaves  );
-
+  void ButterwothFilter( double w_cuffoff);
   void FitWaveform( int wavenum, int nwaves, PTF::PMT pmt );
   static double pmt0_gaussian(double *x, double *par);
   static double pmt1_gaussian(double *x, double *par);
