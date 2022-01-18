@@ -39,9 +39,19 @@ void PTFAnalysis::ChargeSum( float ped, int bin_low, int bin_high ){
 void PTFAnalysis::ChargeSumPTF( float ped){
   fitresult->qped = ped;
   float sum = 0.;
+   float avg = 0.;
+ int  bin_t=hwaveform->FindBin(40);
+  for( int ibin_t = 1; ibin_t<=bin_t; ibin_t++ ){
+    avg+=hwaveform->GetBinContent( ibin_t );
+
+  }
+  avg=avg/bin_t;
+  cout<<avg<<endl;
   for( int ibin = 1; ibin<=hwaveform->GetNbinsX(); ibin++ ){
     sum += ped - hwaveform->GetBinContent( ibin );
   }
+
+
   fitresult->qsum = sum;
 }
 
