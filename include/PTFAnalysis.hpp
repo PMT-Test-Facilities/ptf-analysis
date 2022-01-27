@@ -44,13 +44,15 @@ public:
   
 private:
   void ChargeSum( float ped, int bin_low=1, int bin_high=0 ); // Charge sum relative to ped
+  void ChargeSumPTF();
   bool MonitorCut( float cut ); // Cut if no monitor PMT pulse
   bool FFTCut(); // Do FFT and check if waveform present
   bool PulseLocationCut( int cut ); // Cut on pulse in first or last bins
   void InitializeFitResult( int wavenum, int nwaves  );
-
+  void ButterwothFilter( double w_cuffoff);
   void FitWaveform( int wavenum, int nwaves, PTF::PMT pmt );
   static double pmt0_gaussian(double *x, double *par);
+  static double error_function(double *x, double *par);
   static double pmt1_gaussian(double *x, double *par);
   static double funcEMG(double* x, double* p);
   static double pmt2_piecewise(double *x, double *par);
@@ -61,10 +63,12 @@ private:
 
   //std::vector< ScanPoint > Temperature;
   //TF1* fmygauss{nullptr};  // gaussian function used to fit waveform
-  TF1* ffitfunc{nullptr};  // function used to fit waveform
-
+  TF1* ffitfunc{nullptr};  // function usedto fit waveform
+  TH1D* butterworth_filter{nullptr};
+  TH1D* hf_test{nullptr};
   TH1D* hwaveform{nullptr}; // current waveform
   TH1* hfftm{nullptr}; // fast fourier transform magnitude
+  TH1* hm{nullptr};
   WaveformFitResult * fitresult{nullptr};
   TTree* ptf_tree{nullptr};
   bool  save_waveforms{false};

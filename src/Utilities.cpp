@@ -167,17 +167,31 @@ bool Utilities::HasWaveform( WaveformFitResult *wf, int pmt ){
     // check if fit is valid
     if ( wf->fitstat != 0 ) return false;
     // check if ringing is bigger than waveform
-    if ( wf->amp - wf->sinamp < 2.4e-3 ) return false; 
+    if ( wf->amp - wf->sinamp < 0.002 ) return false; 
     // check if pulse width is reasonable
-    if ( wf->sigma < 2.0 || wf->sigma > 14.0 ) return false;
+    if ( wf->sigma < 1.0 || wf->sigma > 10.0 ) return false;
     // check if mean pulse time is reasonable
-    if ( wf->mean < 56.0 || wf->mean > 90.0 ) return false;
+    if ( wf->mean < 50.0 || wf->mean > 90.0 ) return false;
     // cut on chi2
     //if ( wf->chi2 > 200.0 ) return false;
   }
+  /*
   if( pmt == 1 ){
-    // Checks if using simpler analysis of bin furthest from pedestal
-    if ( wf->amp < 3.1e-3 ) return false; 
-  }
+  //    // Checks if monitor (PMT1) is being fitted
+  //    // check if fit is valid
+	  if ( fitresult->fitstat != 0 ) return false;
+  //    // check if ringing is bigger than waveform
+	
+  if ( fitresult->amp - fitresult->sinamp < 40.0 ) return false; 
+  //    // check if pulse width is reasonable
+	  if ( fitresult->sigma < 0.25 || fitresult->sigma > 5.0 ) return false;
+  //    // check if mean pulse time is reasonable
+	   if ( fitresult->mean < 25.0 || fitresult->mean > 55.0 ) return false;
+  //    // cut on chi2
+		if ( fitresult->chi2 > 200.0 ) return false;
+  //    // Checks if using simpler analysis of bin furthest from pedestal
+  //    if ( fitresult->amp < 25.0 ) return false;
+  //  }
+  */
   return true;
 }
