@@ -45,17 +45,19 @@ int main( int argc, char* argv[] ) {
 
 
     //Grab the specific waveform from each file that you want plotted
-    TH1D *waveform1 = (TH1D*)file1->Get("PMT0_NoWaveforms/hwf_4;1");
-    TH1D* waveform2 = (TH1D*)file2->Get("PMT0_NoWaveforms/hwf_0;1");
-    TH1D* waveform3 = (TH1D*)file3->Get("PMT0_NoWaveforms/hwf_0;1");
-    TH1D* waveform4 = (TH1D*)file4->Get("PMT0_NoWaveforms/hwf_4;1");
+    TGraph *waveform1 = (TGraph*)file1->Get("PMT0_NoWaveforms/hwf_4;1");
+    TGraph* waveform2 = (TGraph*)file2->Get("PMT0_NoWaveforms/hwf_0;1");
+    TGraph* waveform3 = (TGraph*)file3->Get("PMT0_NoWaveforms/hwf_0;1");
+    TGraph* waveform4 = (TGraph*)file4->Get("PMT0_NoWaveforms/hwf_4;1");
 
 
 
     //Create Canvas and Plot!
     TCanvas *c = new TCanvas("C");
     
-    waveform1->Draw("PL");
+    waveform1->SetLineWidth(2);
+    //waveform1->SetLineColour("kRed");
+    waveform1->Draw("L");
     waveform1->SetMarkerColor(2);
     
     waveform2->Draw("SAME");
