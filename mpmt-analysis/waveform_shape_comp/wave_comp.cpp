@@ -45,36 +45,42 @@ int main( int argc, char* argv[] ) {
 
 
     //Grab the specific waveform from each file that you want plotted
-    TGraph *waveform1 = (TGraph*)file1->Get("PMT0_NoWaveforms/hwf_4;1");
-    TGraph* waveform2 = (TGraph*)file2->Get("PMT0_NoWaveforms/hwf_0;1");
-    TGraph* waveform3 = (TGraph*)file3->Get("PMT0_NoWaveforms/hwf_0;1");
-    TGraph* waveform4 = (TGraph*)file4->Get("PMT0_NoWaveforms/hwf_4;1");
+    TH1D *waveform1 = (TH1D*)file1->Get("PMT0_NoWaveforms/hwf_4;1");
+    TH1D* waveform2 = (TH1D*)file2->Get("PMT0_NoWaveforms/hwf_5;1");
+    TH1D* waveform3 = (TH1D*)file3->Get("PMT0_NoWaveforms/hwf_0;1");
+    TH1D* waveform4 = (TH1D*)file4->Get("PMT0_NoWaveforms/hwf_4;1");
 
 
 
     //Create Canvas and Plot!
     TCanvas *c = new TCanvas("C");
     
-    waveform1->SetLineWidth(2);
-    //waveform1->SetLineColour("kRed");
-    waveform1->Draw("L");
-    waveform1->SetMarkerColor(2);
-    
-    waveform2->Draw("SAME");
-    waveform2->SetMarkerColor(4);
-
-    waveform3->Draw("SAME");
-    waveform3->SetMarkerColor(6);
-
-    waveform4->Draw("SAME");
+    waveform4->SetLineWidth(2);
+    waveform4->Draw("hist");
     waveform4->SetMarkerColor(7);
+    waveform4->SetLineColor(kCyan);
+
+    waveform3->SetLineWidth(2);
+    waveform3->Draw("histSAME");
+    waveform3->SetMarkerColor(6);
+    waveform3->SetLineColor(kPink);
+
+    waveform2->SetLineWidth(2);
+    waveform2->Draw("histSAME");
+    waveform2->SetMarkerColor(4);
+    waveform2->SetLineColor(kBlue);
+
+    waveform1->SetLineWidth(2);
+    waveform1->Draw("histSAME");
+    waveform1->SetMarkerColor(2);
+    waveform1->SetLineColor(kRed);
 
 
 
-    //formatting
-    waveform1->GetXaxis()->SetTitle("Time (ns)");
-    waveform1->GetXaxis()->SetRangeUser(2000, 2600);
-    waveform1->GetYaxis()->SetTitle("Voltage (V)");
+    //formatting (only need to do this for the first one)
+    waveform4->GetXaxis()->SetTitle("Time (ns)");
+    waveform4->GetXaxis()->SetRangeUser(2000, 2600);
+    waveform4->GetYaxis()->SetTitle("Voltage (V)");
 
     // Legend
     TLegend *leg = new TLegend(0.8,1,1,0.8);
