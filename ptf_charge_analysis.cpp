@@ -38,7 +38,7 @@ const double sqrt2pi = std::sqrt( 2 * std::acos(-1) );
 
 double calculate_charge( const WaveformFitResult& wf ){
   // integral of gaussian a * exp( -(x-b)^2 / 2 c^2 )  = sqrt(2*pi) a * c
-  return sqrt2pi * fabs( wf.amp * wf.sigma );
+  return sqrt2pi * fabs( wf.amp * (wf.sigma/2 ));
 } 
 
 int main( int argc, char* argv[] ) {
@@ -60,7 +60,7 @@ int main( int argc, char* argv[] ) {
 
   // Opening the output root file
   string outname = string("ptf_charge_analysis_run0") + argv[2] + ".root";
-  TFile * fout = new TFile(outname.c_str(), "NEW");
+  TFile * fout = new TFile(outname.c_str(), "RECREATE");
   std::cout<<"Output file "<<outname<<std::endl;
 
   // get the scanpoints information
@@ -70,10 +70,10 @@ int main( int argc, char* argv[] ) {
   vector< double > ybins = utils.get_bins( scanpoints, 'y' );
 
   // Create overall sum charge histogram
-  TH1D* hqall = new TH1D("hqall", "Charge deposit for all events; Q (ADC); Counts/bin", 50, 0., 5000. );
-  TH1D* hqallfine = new TH1D("hqallfine", "Charge deposit for all events; Q (ADC); Counts/bin", 100, 0., 200. );
-  TH1D* hqsum = new TH1D("hqsum", "Charge deposit for good fit events; Q (ADC); Counts/bin", 100, 0., 5000. );
-  TH1D* hqped = new TH1D("hqped", "Charge deposit for pedestal events; Q (ADC); Counts/bin", 100, 0., 5000. );
+  TH1D* hqall = new TH1D("hqall", "Charge deposit for all events; Q (ADC); Counts/bin", 100, -500, 5000. );
+  TH1D* hqallfine = new TH1D("hqallfine", "Charge deposit for all events; Q (ADC); Counts/bin", 125, 0., 200. );
+  TH1D* hqsum = new TH1D("hqsum", "Charge deposit for good fit events; Q (ADC); Counts/bin", 100, -500, 5000. );
+  TH1D* hqped = new TH1D("hqped", "Charge deposit for pedestal events; Q (ADC); Counts/bin", 125, 0., 5000. );
 
   TH1D* hchi2 = new TH1D("hchi2", "#chi^{2} of scan-point fits; #chi^{2}; scan-points / bin", 100, 0., 50. );
 
@@ -212,7 +212,7 @@ int main( int argc, char* argv[] ) {
     ScanPoint scanpoint = scanpoints[ iscan ];
     //Loop over scanpoint
     for ( unsigned iev = 0; iev < scanpoint.nentries(); ++iev ){
-      
+      cout<<"number of entry per scanpoint"<<scanpoint.nentries()<<endl;
       tt1->GetEvent( scanpoint.get_entry() + iev );
       double charge = calculate_charge( *wf );
       hqallscanpt[ iscan ]->Fill( charge );
@@ -234,13 +234,13 @@ int main( int argc, char* argv[] ) {
   Circle_st circ;
 
   bool docirclefit = true;
-  if ( argc == 4 && argv[3][0] == 'F' ) docirclefit = false;
+  // if ( argc == 4 && argv[3][0] == 'F' ) docirclefit = false;
   if ( docirclefit ){
-    circ = find_circle_max_grad( hqavg, hgrad, 0.25 );
-  } else {
+    //circ = find_circle_max_grad( hqavg, hgrad, 0.5 );//0.25
+    // } //else {
     circ.r  = 0.25;
-    circ.xc = 0.40;
-    circ.yc = 0.36;
+    circ.xc = 0.3725;
+    circ.yc = 0.25;//
   }
   std::cout<<"==================================="<<std::endl;
   std::cout<<"Using circle fit? "<<docirclefit<<std::endl;
@@ -300,17 +300,20 @@ int main( int argc, char* argv[] ) {
   double N0    = hqall->Integral( 1, 1 );
   double Nrest = hqall->Integral( 2, hqall->GetNbinsX()+1 );
   double mufix = Nrest / N0;
-  mufix = log( mufix + 1 ); // corrected to get estimated mu
+  mufix =0.1;// log( mufix + 1 ); // corrected to get estimated mu
   ff->SetNpx(1000);
   ff->SetParNames("N","Q_{1}","#sigma_{1}", "#mu", "w", "#alpha" );
-  ff->SetParameters( Nfix, 400.0, 152.0, mufix, 0.003, 0.000835  );
-  ff->FixParameter( 0, Nfix );
-  ff->FixParameter( 1, 400.0 );
-  ff->FixParameter( 2, 148. );
-  ff->FixParameter( 3, mufix );
-  hqall->Fit(ff, "", "", 2000., 5000.0 );
+  ff->SetParameters( Nfix, 400.0, 152.0, mufix, 5.048e-5, 0.0004683  );
+  //ff->FixParameter( 0, Nfix );
+  //ff->FixParameter( 1, 400.0 );
+  //ff->FixParameter( 2, 148. );
+  //ff->FixParameter( 3, mufix );
+  ff->SetLineWidth(3);                                                                                                                                                              \
 
-  for ( unsigned ipar=0; ipar < 6; ++ipar ) ff->ReleaseParameter(ipar);
+  ff->SetLineColor(kRed+1);
+  hqall->Fit(ff, "", "S", 0.0, 5000.0 );
+
+  /* for ( unsigned ipar=0; ipar < 6; ++ipar ) ff->ReleaseParameter(ipar);
   ff->FixParameter( 0, Nfix );
   ff->FixParameter( 4, ff->GetParameter(4) ) ;
   ff->FixParameter( 5, ff->GetParameter(5) );
@@ -318,12 +321,12 @@ int main( int argc, char* argv[] ) {
   ff->SetLineWidth(3);
   ff->SetLineColor(kRed+2);
 
-  hqall->Fit(ff, "", "", 0., 2000. );
+  hqall->Fit(ff, "Q", "", 0., 2000. );
 
   for ( unsigned ipar=0; ipar < 6; ++ipar ) ff->ReleaseParameter(ipar);
   TCanvas * cpmtres = new TCanvas();
   cpmtres->cd();
-  TFitResultPtr  result = hqall->Fit(ff, "S", "", 0, 5000.0 );
+  TFitResultPtr  result = hqall->Fit(ff, "SQ", "", 0, 5000.0 );
   TMatrixDSym cov = result->GetCovarianceMatrix();
   TMatrixDSym cor = result->GetCorrelationMatrix();
 
@@ -363,7 +366,7 @@ int main( int argc, char* argv[] ) {
   ff2->SetLineWidth(3);
   ff2->SetLineColor(kRed+2);
 
-  hqall->Fit(ff2, "", "", 0., 2000. );
+  hqall->Fit(ff2, "", "Q", 0., 2000. );
 
   // Initial fit to pin the parameters we want
   TCanvas * cpmtres2 = new TCanvas();
@@ -375,7 +378,7 @@ int main( int argc, char* argv[] ) {
   ff2->FixParameter( 4, ff2->GetParameter(4) );
   ff2->FixParameter( 5, ff2->GetParameter(5) );
 
-  TFitResultPtr  result2 = hqall->Fit(ff2, "S", "", 0, 5000.0 );
+  TFitResultPtr  result2 = hqall->Fit(ff2, "SQ", "", 0, 5000.0 );
 
   TMatrixDSym cov2 = result2->GetCovarianceMatrix();
   TMatrixDSym cor2 = result2->GetCorrelationMatrix();
@@ -390,12 +393,12 @@ int main( int argc, char* argv[] ) {
       hcormat2->SetBinContent( i+1, j+1, cor2[i][j] );
     }
   }
-  
+  */
 
   std::cout<<"Done global fit"<<std::endl;
 
   // add fit components to plot
-  std::vector< TF1* > fcmp = get_model1_components( ff2->GetParameters() );
+  std::vector< TF1* > fcmp = get_model1_components( ff->GetParameters() );
   for ( TF1* f : fcmp ){
     hqall->GetListOfFunctions()->Add( f );
     f->Draw("same");
@@ -444,14 +447,14 @@ int main( int argc, char* argv[] ) {
     ftmp->SetNpx(1000);
     ftmp->SetParNames("N","Q_{1}","#sigma_{1}", "#mu", "w", "#alpha" );
     ftmp->FixParameter(0, curNfix );
-    ftmp->SetParameter(1, ff2->GetParameter(1) );
-    ftmp->SetParameter(2, ff2->GetParameter(2) );
+    ftmp->SetParameter(1, ff->GetParameter(1) );
+    ftmp->SetParameter(2, ff->GetParameter(2) );
     ftmp->FixParameter(3, curmufix );
-    ftmp->FixParameter(4, ff2->GetParameter(4) );
-    ftmp->FixParameter(5, ff2->GetParameter(5) );
+    ftmp->FixParameter(4, ff->GetParameter(4) );
+    ftmp->FixParameter(5, ff->GetParameter(5) );
     ftmp->SetParLimits(1, 0., 1000. );
     ftmp->SetParLimits(2, 0., 1000. );
-    hqallscanpt[iscan]->Fit( ftmp, "", "", 0., 2000. );
+    hqallscanpt[iscan]->Fit( ftmp, "Q", "", 0., 2000. );
     vecpmtresponse.push_back( ftmp );
     hchi2->Fill( ftmp->GetChisquare() );
   }
@@ -472,6 +475,7 @@ int main( int argc, char* argv[] ) {
 
   //Write and close output file
   //PMTResponsePed::set_pedestal( "nofftcut_pedestal_4554.root", "hqall_nofftcut" );
+  hq2pe->SetMaximum(500);
   fout->Write();
   fout->Close();
 

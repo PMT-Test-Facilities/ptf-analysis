@@ -76,14 +76,14 @@ int main(int argc, char** argv) {
 
   // Opening the output root file
   string outname = string("ptf_analysis_run0") + argv[2] + ".root";
-  TFile * outFile = new TFile(outname.c_str(), "NEW");
+  TFile * outFile = new TFile(outname.c_str(), "RECREATE");
   //TFile * outFile = new TFile("ptf_analysis.root", "NEW");
 
   // Set up PTF Wrapper
   vector<int> phidgets = {0, 1, 3};
   PTF::PMT PMT0 = {0,0,PTF::Hamamatsu_R3600_PMT}; // only looking at one PMT at a time, previously channel
-  PTF::PMT PMT1 = {1,2,PTF::PTF_Monitor_PMT}; // only looking at one PMT at a time
-  PTF::PMT REF = {2,1,PTF::Reference}; // only looking at one PMT at a time
+  PTF::PMT PMT1 = {1,3,PTF::PTF_Monitor_PMT}; // only looking at one PMT at a time
+  PTF::PMT REF = {2,2,PTF::Reference}; // only looking at one PMT at a time
   vector<PTF::PMT> activePMTs = { PMT0, PMT1, REF }; // must be ordered {main,monitor}
   vector<PTF::Gantry> gantries = {PTF::Gantry0, PTF::Gantry1};
   Wrapper wrapper = Wrapper(6000, 70, activePMTs, phidgets, gantries, PTF_CAEN_V1730);
@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
   //std::cout << "Using PMT1 errorbar size " << errbars1->get_errorbar() << std::endl;
   
   // Do analysis of waveforms for each scanpoint
-  PTFAnalysis *analysis0 = new PTFAnalysis( outFile, wrapper, 4.4/*errbars0->get_errorbar()*/, PMT0, string(argv[3]), true );
+      PTFAnalysis *analysis0 = new PTFAnalysis( outFile, wrapper, 4.4/*errbars0->get_errorbar()*/, PMT0, string(argv[3]), true );
   analysis0->write_scanpoints();
 
   // Switch PMT to monitor PMT
@@ -110,7 +110,7 @@ int main(int argc, char** argv) {
   // Switch to reference waveform
   
   // Do analysis of waveforms for each scanpoint
-  PTFAnalysis *analysis2 = new PTFAnalysis( outFile, wrapper, 4.4/*errbars2->get_errorbar()*/, REF, string(argv[3]), true );
+   PTFAnalysis *analysis2 = new PTFAnalysis( outFile, wrapper, 4.4/*errbars2->get_errorbar()*/, REF, string(argv[3]), true );
   
   // Do quantum efficiency analysis
   // This is now also done in a separate analysis script (including temperature corrections)

@@ -147,7 +147,7 @@ int main( int argc, char* argv[] ) {
 
   // Opening the output root file
   string outname = string("ptf_qe_analysis_run0") + argv[2] + ".root";
-  TFile * fout = new TFile(outname.c_str(), "NEW");
+  TFile * fout = new TFile(outname.c_str(), "RECREATE");
   //Get the scanpoints information
   std::vector< ScanPoint > scanpoints = ReadScanPoints( fin );
 
@@ -290,8 +290,8 @@ int main( int argc, char* argv[] ) {
   pmt0_qe_corr->Divide(pmt0_qe, temp_corr);
   
   //Remove data outside circle
-  TH2D* pmt0_qe_corr_grad;
-  Circle_st circ = find_circle_max_grad( pmt0_qe_corr, pmt0_qe_corr_grad, 0.5 );
+   TH2D* pmt0_qe_corr_grad;
+   Circle_st circ = find_circle_max_grad( pmt0_qe_corr, pmt0_qe_corr_grad, 0.5 );
   zero_outside_circle( pmt0_qe_corr, circ );
   zero_outside_circle( pmt0_qe, circ );
 
@@ -412,21 +412,21 @@ int main( int argc, char* argv[] ) {
 
   //Set plot ranges
   int run = stoi(argv[2]);
-  if( run<4525 ){
-    pmt0_qe->SetMinimum(0.0);
-    temp_corr_min->SetMinimum(0);
-    pmt0_qe_corr->SetMinimum(0.0);
-    pmt0_qe->SetMaximum(0.22);
-    pmt0_qe_corr->SetMaximum(0.22);
-    temp_corr_min->SetMaximum(0.22);
-  }
-  else{
+  //  if( run<4525 ){
+  //  pmt0_qe->SetMinimum(0.0);
+  //  temp_corr_min->SetMinimum(0);
+  //  pmt0_qe_corr->SetMinimum(0.0);
+  //  pmt0_qe->SetMaximum(0.22);
+  //  pmt0_qe_corr->SetMaximum(0.22);
+  //  temp_corr_min->SetMaximum(0.22);
+  // }
+  // else{
     pmt0_qe->SetMinimum(0.0);
     pmt0_qe_corr->SetMinimum(0.0);
     pmt0_qe->SetMaximum(0.3);
     pmt0_qe_corr->SetMaximum(0.3);
     temp_corr_min->SetMaximum(0.3);
-  }
+    // }
   pmt1_qe->SetMinimum(0.3);
   pmt1_qe->SetMaximum(0.6);
   //temp_corr->SetMinimum(0.7);
@@ -441,27 +441,29 @@ int main( int argc, char* argv[] ) {
   //Make plots
   TCanvas* c = new TCanvas("canvas");
   string plotname;
+  
   g_pmt0_qe->Draw("colz0");
-  plotname = string("~/projects/def-pdeperio/vgousy/ptf/ptf-analysis-2/plot_dir/1par/ptf_qe_analysis_run0")+argv[2]+"_pmt0.pdf";
+  plotname = string("/home/vgousy/projects/def-pdeperio/vgousy/ptf-analysis/plots/ptf_qe_analysis_run0")+argv[2]+"_pmt0.pdf";
   c->SaveAs(plotname.c_str(),"pdf");
   //TCanvas* c2 = new TCanvas();
   pmt1_qe->Draw("colz0");
   gPad->Modified();
   gPad->Update();
-  plotname = string("~/projects/def-pdeperio/vgousy/ptf/ptf-analysis-2/plot_dir/1par/ptf_qe_analysis_run0")+argv[2]+"_pmt1.pdf";
+  plotname = string("/home/vgousy/projects/def-pdeperio/vgousy/ptf-analysis/plots/ptf_qe_analysis_run0")+argv[2]+"_pmt1.pdf";
   c->SaveAs(plotname.c_str(),"pdf");
   //TCanvas* c3 = new TCanvas();
   temp_corr->Draw("colz0");
   gPad->Modified();
   gPad->Update();
-  plotname = string("~/projects/def-pdeperio/vgousy/ptf/ptf-analysis-2/plot_dir/1par/ptf_qe_analysis_run0")+argv[2]+"_tempcorr.pdf";
+  plotname = string("/home/vgousy/projects/def-pdeperio/vgousy/ptf-analysis/plots/ptf_qe_analysis_run0")+argv[2]+"_tempcorr.pdf";
   c->SaveAs(plotname.c_str(),"pdf");
   //TCanvas* c4 = new TCanvas("c4");
   pmt0_qe_corr->Draw("colz0");
   gPad->Modified();
   gPad->Update();
-  plotname = string("~/projects/def-pdeperio/vgousy/ptf/ptf-analysis-2/plot_dir/1par/ptf_qe_analysis_run0")+argv[2]+"_pmt0corr.pdf";
+  plotname = string("/home/vgousy/projects/def-pdeperio/vgousy/ptf-analysis/plots/1par/ptf_qe_analysis_run0")+argv[2]+"_pmt0corr.pdf";
   c->SaveAs(plotname.c_str(),"pdf");
+  /*
   //TCanvas* c5 = new TCanvas("c5"); 
   pmt1_diff->Draw("colz0");
   gPad->Modified();
@@ -506,7 +508,7 @@ int main( int argc, char* argv[] ) {
   gPad->Update();
   plotname = string("~/projects/def-pdeperio/vgousy/ptf/ptf-analysis-2/plot_dir/1par/ptf_qe_analysis_run0")+argv[2]+"model.pdf";
   c->SaveAs(plotname.c_str(),"pdf");
-
+  */
   //Write and close output file
   fout->Write();
   fout->Close();

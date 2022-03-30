@@ -44,7 +44,7 @@ public:
   
 private:
   void ChargeSum( float ped, int bin_low=1, int bin_high=0 ); // Charge sum relative to ped
-  void ChargeSumPTF();
+  void ChargeSumPTF(double baseline);
   bool MonitorCut( float cut ); // Cut if no monitor PMT pulse
   bool FFTCut(); // Do FFT and check if waveform present
   bool PulseLocationCut( int cut ); // Cut on pulse in first or last bins
@@ -53,6 +53,7 @@ private:
   void FitWaveform( int wavenum, int nwaves, PTF::PMT pmt );
   static double pmt0_gaussian(double *x, double *par);
   static double error_function(double *x, double *par);
+  static double linear_fit(double *x, double *par);
   static double pmt1_gaussian(double *x, double *par);
   static double funcEMG(double* x, double* p);
   static double pmt2_piecewise(double *x, double *par);

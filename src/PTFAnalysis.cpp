@@ -36,7 +36,7 @@ void PTFAnalysis::ChargeSum( float ped, int bin_low, int bin_high ){
     }
     fitresult->qsum = sum;
 }
-void PTFAnalysis::ChargeSumPTF(){
+void PTFAnalysis::ChargeSumPTF(double baseline){
  float sum = 0.;
  float avg = 0.;
  int  bin_t=hwaveform->FindBin(40);
@@ -48,11 +48,12 @@ void PTFAnalysis::ChargeSumPTF(){
   fitresult->qped = avg;
   //cout<<avg<<endl;
   for( int ibin = 1; ibin<=hwaveform->GetNbinsX(); ibin++ ){
-    sum += avg - hwaveform->GetBinContent( ibin );
+    sum += avg - hwaveform->GetBinContent( ibin );//8135.4
   }
   
 
-  fitresult->qsum = sum;
+  fitresult->qsum = sum;//Approximative offset
+  //cout<<sum+200<<endl;
 }
 
  
@@ -91,50 +92,44 @@ bool PTFAnalysis::FFTCut(){
   double range = hwaveform->GetXaxis()->GetXmax() - hwaveform->GetXaxis()->GetXmin();
 
   hfftm = hwaveform->FFT( hfftm, "MAG" ); // Magnitude
+  hfftm->Scale(1./(n+1));
   hf_test=new TH1D("fft","fft",nbins,-500e6,500e6);
-  hfftm->SetBinContent(1, 0.0);
-  TVirtualFFT *fft = TVirtualFFT::GetCurrentTransform();
+  //hfftm->SetBinContent(1, 0.0);
+
+  TH1 *hp = 0;
+  hp = hwaveform->FFT(hp, "PH");
+  
+  //TVirtualFFT *fft = TVirtualFFT::GetCurrentTransform();
   //Use the following method to get the full output:
-  Double_t *re_full = new Double_t[n];
-  Double_t *im_full = new Double_t[n];
-  fft->GetPointsComplex(re_full,im_full);
-    for(int i = 0; i < n; i++){
-   hf_test->SetBinContent(i,hfftm->GetBinContent(i));
-   re_full[i]*=1/sqrt(n);//Need to rescale                                                                                                                                         
-   im_full[i]*=1/sqrt(n);
-   }
+
+  Double_t *re_full = new Double_t[n+1];
+  Double_t *im_full = new Double_t[n+1];
+  for (int i=0; i<n+1; ++i) {
+    if(i<=(int)(n/2)) {
+      // double freq = hm_c->GetBinCenter(i+1);
+      re_full[i] = hfftm->GetBinContent(i+1)*TMath::Cos(hp->GetBinContent(i+1));//ffilter->Eval(freq);
+      im_full[i] = hfftm->GetBinContent(i+1)*TMath::Sin(hp->GetBinContent(i+1));//ffilter->Eval(freq);
+    } else {
+      re_full[i]=0;
+      im_full[i]=0;
+    }
+  } 
 
   //Now let's make a backward transform:                                                                                                                                         
-  TVirtualFFT *fft_back = TVirtualFFT::FFT(1, &n, "C2R M K");
+  int m=n+1;
+  TVirtualFFT *fft_back = TVirtualFFT::FFT(1, &m, "C2R M K");
   fft_back->SetPointsComplex(re_full,im_full);
   fft_back->Transform();
-  // TH1 *hb = 0;
-  TH1D *hb = new TH1D("revers","revers",n,0.0,range);
-  //Let's look at the output                                                                                                                                                        
-  hb = (TH1D*)TH1D::TransformHisto(fft_back,hb,"Re");
-  hb->Scale(1/sqrt(n));
-  for(int i = 0; i <= hb->GetNbinsX(); i++){
-        hwaveform->SetBinContent(i,hb->GetBinContent(i));
-   }
-
-  hb->Delete();
-  fft->Delete();
-  fft_back->Delete();
+  TH1 *hb = 0;
+  //Let's look at the output
+  hb = TH1::TransformHisto(fft_back,hb,"Re");
+  for (int i=0; i<n+1; ++i) {
+    hwaveform->SetBinContent(i+1, hb->GetBinContent(i+1));
+  }
+  
+  delete fft_back;
   delete [] re_full;
-  delete [] im_full; 
- //hfftm->SetBinContent(1, 0.0); // Remove pedestal                                                                                                                                 
-  // Cut if max bin not not near 0 Hz or below threshold                                                                                                                            
-   
- int maxBin = hfftm->GetMaximumBin();
-  double maxValue = hfftm->GetBinContent(maxBin);
-  fitresult->fftmaxbin = maxBin;
-  fitresult->fftmaxval = maxValue;
-  if( maxValue > 80.0 && ((maxBin > 1 && maxBin <= 4) || (maxBin >= nbins-3 && maxBin <= nbins)) ){
-    return true;
-  }
-  else{
-    return false;
-  }
+  delete [] im_full;
   
 }
 
@@ -188,6 +183,17 @@ double arg=0;
 	double gfunc=par[0]*TMath::Erf((x[0]-par[1])/par[2]);
 return gfunc;
 	
+
+}
+double PTFAnalysis::linear_fit(double *x, double *par){
+        // x[0] is x value                                                                                                                                                                                                                                                     
+        //par[0]=amplitude                                                                                                                                                                                                                                                     
+        //par[1]=mean                                                                                                                                                                                                                                                                   //par[2]=sigma^2                                                                                                                                                                                                                                                        
+
+double arg=0;
+        double gfunc=par[0]*x[0]+par[1];
+return gfunc;
+
 
 }
 
@@ -277,24 +283,24 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
   // assumes fit result structure already setup
   // Fit waveform for main PMT
   if( pmt.type == PTF::Hamamatsu_R3600_PMT ){
-   float conversion_volt=0.0001220703125;
+    //float conversion_volt=0.0001220703125;
     // check if we need to build the function to fit
     if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",pmt0_gaussian,0,140,7);
-    ffitfunc->SetParameters( 1.0e-4, 70, 3.6, 0.993, 0.001, 0.5, 0.0 );
+    ffitfunc->SetParameters( 1.0, 70, 7.2, 8135, 10, 0.2, 0.0 );
     ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "Offset",
       		 "Sine-Amp",  "Sin-Freq", "Sin-Phase" );
 
-    ffitfunc->SetParLimits(0, 0.0, 1.1);
-    ffitfunc->SetParLimits(1, 40, 90 );
-    ffitfunc->SetParLimits(2, 0.25, 10.0 );
-    ffitfunc->SetParLimits(3, 0.9, 1.1 );
-    ffitfunc->SetParLimits(4, 0.0, 1.1);
-    ffitfunc->SetParLimits(5, 0.0, 50.0);
+    ffitfunc->SetParLimits(0, 0.0, 8500);
+    ffitfunc->SetParLimits(1, 50, 110 );
+    ffitfunc->SetParLimits(2, 0.25, 12.0 );
+    ffitfunc->SetParLimits(3, 7500, 8500 );
+    ffitfunc->SetParLimits(4, 0.0, 8500);
+    ffitfunc->SetParLimits(5, 0.1, 50.0);
     ffitfunc->SetParLimits(6, -TMath::Pi(), TMath::Pi() );
  
     // first fit for sine wave:
     ffitfunc->FixParameter(0,0.0);//Set it to  0
-    ffitfunc->FixParameter(1,70);
+    ffitfunc->FixParameter(1,80);
     ffitfunc->FixParameter(2,3.6);
     hwaveform->Fit( ffitfunc, "Q", "", 0,40.0);
 
@@ -302,15 +308,15 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     ffitfunc->ReleaseParameter(0);
     ffitfunc->ReleaseParameter(1);
     ffitfunc->ReleaseParameter(2);
-    ffitfunc->SetParLimits(0, 0.0,1.1);
-    ffitfunc->SetParLimits(1, 40, 90 );
-    ffitfunc->SetParLimits(2, 0.25, 10.0 );
+    ffitfunc->SetParLimits(0, 0.0,8500);
+    ffitfunc->SetParLimits(1, 50, 110 );
+    ffitfunc->SetParLimits(2, 0.25, 12.0 );
     ffitfunc->FixParameter(3, ffitfunc->GetParameter(3) );
     ffitfunc->FixParameter(4, ffitfunc->GetParameter(4));
     ffitfunc->FixParameter(5, ffitfunc->GetParameter(5));
     ffitfunc->FixParameter(6, ffitfunc->GetParameter(6));
      
-   int fitstat= hwaveform->Fit( ffitfunc, "Q", "", 50.0, 90);
+    int fitstat= hwaveform->Fit( ffitfunc, "Q", "", 50.0, 110);//Adjust the timing window
 
     ffitfunc->FixParameter(0,ffitfunc->GetParameter(0));
     ffitfunc->FixParameter(1,ffitfunc->GetParameter(1));
@@ -321,11 +327,11 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     ffitfunc->FixParameter(6, ffitfunc->GetParameter(6));
 
 
-    if (ffitfunc->GetParameter(0)<0.0 || ffitfunc->GetParameter(0)>1.1){
-      cout<<"0  "<<ffitfunc->GetParameter(0)<<endl;}
-    if (ffitfunc->GetParameter(1)<40.0 || ffitfunc->GetParameter(0)>90.0){
-      cout<<"1  "<<ffitfunc->GetParameter(1)<<endl;}
-     if (ffitfunc->GetParameter(2)<0.25 || ffitfunc->GetParameter(2)>10.0){
+    /*    if (ffitfunc->GetParameter(0)<0.0 || ffitfunc->GetParameter(0)>1.1){
+    //  cout<<"0  "<<ffitfunc->GetParameter(0)<<endl;}
+    //if (ffitfunc->GetParameter(1)<40.0 || ffitfunc->GetParameter(0)>90.0){
+    //  cout<<"1  "<<ffitfunc->GetParameter(1)<<endl;}
+    // if (ffitfunc->GetParameter(2)<0.25 || ffitfunc->GetParameter(2)>10.0){
       cout<<"2  "<<ffitfunc->GetParameter(2)<<endl;}
     if (ffitfunc->GetParameter(3)<0.9 || ffitfunc->GetParameter(3)>1.1){
       cout<<"3  "<<ffitfunc->GetParameter(3)<<endl;}
@@ -335,11 +341,11 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       cout<<"5  "<<ffitfunc->GetParameter(5)<<endl;}
  if (ffitfunc->GetParameter(6)<-TMath::Pi() || ffitfunc->GetParameter(6)>TMath::Pi()){
       cout<<"6  "<<ffitfunc->GetParameter(6)<<endl;}
-
+    */
    
     // then fit sine and gaussian together    
 
-     hwaveform->Fit( ffitfunc, "Q", "", 0, 120);
+     hwaveform->Fit( ffitfunc, "Q", "", 0, 140);
     //  ffitfunc->SetParameters( ffitfunc->GetParameter(0), ffitfunc->GetParameter(1), ffitfunc->GetParameter(2), ffitfunc->GetParameter(3),
     //			     ffitfunc->GetParameter(4), ffitfunc->GetParameter(5), ffitfunc->GetParameter(6) );
   
@@ -384,31 +390,33 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
   // Fit with simple gaussian
   // OR find bin furthest from pedestal
   //else if( pmt == 1 ){
-  //  if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",pmt1_gaussian,0,70,4);
-  //  ffitfunc->SetParameters( fitresult->amp, fitresult->mean, 1.0, fitresult->ped );
-  //  ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "Offset" );
+  //else if( pmt.type == PTF::PTF_Monitor_PMT ){
+    //if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",pmt1_gaussian,0,140,4);
+    //ffitfunc->SetParameters( 10, 70, 0.2, 8172 );
+    //ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "Offset" );
 
-  //  ffitfunc->SetParLimits(0, 0.0, 8500.0);
-  //  ffitfunc->SetParLimits(1, 0.0, 70.0 );
-  //  ffitfunc->SetParLimits(2, 0.01, 3.0 );
-  //  ffitfunc->SetParLimits(3, 7500.0, 9000.0 );
+    //ffitfunc->SetParLimits(0, 0.0, 8500.0);
+    //ffitfunc->SetParLimits(1, 0.0, 140.0 );
+    //ffitfunc->SetParLimits(2, 0.01, 3.0 );
+    //ffitfunc->SetParLimits(3, 7500.0, 9000.0 );
 
   //  // then fit gaussian
-  //  int fitstat = hwaveform->Fit( ffitfunc, "Q", "", 30.0, 50.0);
+    //int fitstat = hwaveform->Fit( ffitfunc, "Q", "", 60.0, 100.0);
 
   //  // collect fit results
-  //  fitresult->ped       = ffitfunc->GetParameter(3);
-  //  fitresult->mean      = ffitfunc->GetParameter(1);
-  //  fitresult->sigma     = ffitfunc->GetParameter(2);
-  //  fitresult->amp       = ffitfunc->GetParameter(0);
-  //  fitresult->chi2      = ffitfunc->GetChisquare();
-  //  fitresult->ndof      = 30-4;
-  //  fitresult->prob      = TMath::Prob( ffitfunc->GetChisquare(), 30-4 );
-  //  fitresult->fitstat   = fitstat;
+    //fitresult->ped       = ffitfunc->GetParameter(3);
+    //fitresult->mean      = ffitfunc->GetParameter(1);
+    //fitresult->sigma     = ffitfunc->GetParameter(2);
+    //fitresult->amp       = ffitfunc->GetParameter(0);
+    //fitresult->chi2      = ffitfunc->GetChisquare();
+    //fitresult->ndof      = 30-4;
+    //fitresult->prob      = TMath::Prob( ffitfunc->GetChisquare(), 30-4 );
+    //fitresult->fitstat   = fitstat;
   //}
-  else if( pmt.type == PTF::PTF_Monitor_PMT ){
+     else if( pmt.type == PTF::PTF_Monitor_PMT ){
+       // cout<<"going into the loop"<<endl;
     float ped = 0.0;
-    int nbins = 20;
+    int nbins = 40;
     for( int ibin = 1; ibin<=nbins; ibin++ ){
       ped += hwaveform->GetBinContent( ibin )/(float)nbins;
     }
@@ -423,7 +431,9 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     }
     fitresult->amp = amp;
     fitresult->mean = mean;
-  }
+     
+ }
+ 
   else if( pmt.type == PTF::Reference ){ 
     /*
     if( ffitfunc == nullptr ) ffitfunc = new TF1("error function", error_function,0,90,3);
@@ -439,7 +449,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
      fitresult->amp       = ffitfunc->GetParameter(0);
      
      fitresult->fitstat   = fitstat;
-    */
+    
      float mean = 0.0;
       for( int ibin = 1; ibin<=hwaveform->GetNbinsX(); ibin++ ){
       if( hwaveform->GetBinContent( ibin ) < 0.5 ){
@@ -448,8 +458,73 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       }
     }
     fitresult->mean = mean;
-       
+    *///Method used to get the minimum of the distribution 
+    //float ped = 0.0;
+    //int nbins = 40;
+    //for( int ibin = nbins; ibin<=nbins+30; ibin++ ){
+    //  ped += hwaveform->GetBinContent( ibin )/(float)30.0;
+    // }
+    //fitresult->ped = ped;
+    /*
+    float amp =hwaveform->GetBinContent(1);
+    float mean = 0.0;
+    for( int ibin = 1; ibin<=hwaveform->GetNbinsX(); ibin++ ){
+      if( hwaveform->GetBinContent( ibin ) < amp ){
+        mean =hwaveform->GetXaxis()->GetBinCenter(ibin);
+	amp=hwaveform->GetBinContent( ibin );
+      }
+
     }
+    // if (mean>2){
+    //  cout<<mean<<endl;
+    */
+    float mean = 0.0;
+    for( int ibin = 3; ibin<=hwaveform->GetNbinsX()-3; ibin++ ){
+      if( hwaveform->GetBinContent( ibin ) - hwaveform->GetBinContent( ibin-1) > 300 ){//Invert
+	 if ( hwaveform->GetBinContent( ibin+1 )- hwaveform->GetBinContent( ibin )<100  ){ //Invert
+	   TF1 *f1 = new TF1("f1", linear_fit, hwaveform->GetXaxis()->GetBinCenter(ibin-2) ,hwaveform->GetXaxis()->GetBinCenter(ibin),2);
+	   hwaveform->Fit("f1","Q","", hwaveform->GetXaxis()->GetBinCenter(ibin-2) ,hwaveform->GetXaxis()->GetBinCenter(ibin));
+	   double m=f1->GetParameter(0);
+	   double b=f1->GetParameter(1);  
+	   mean=(12000.0-b)/m;//(hwaveform->GetXaxis()->GetBinCenter(ibin-2 )+hwaveform->GetXaxis()->GetBinCenter(ibin+2))/2;
+	   fitresult->mean = mean;
+	   fitresult->amp=f1->GetParameter(0);
+	   fitresult->sigma=f1->GetParameter(1);
+	   break;
+	 }
+	 else{
+	   TF1 *f1 = new TF1("f1", linear_fit, hwaveform->GetXaxis()->GetBinCenter(ibin-1) ,hwaveform->GetXaxis()->GetBinCenter(ibin+1),2);
+	   hwaveform->Fit("f1","Q","", hwaveform->GetXaxis()->GetBinCenter(ibin-1) ,hwaveform->GetXaxis()->GetBinCenter(ibin+1));
+	   double m=f1->GetParameter(0);
+           double b=f1->GetParameter(1);
+           mean=(12000.0-b)/m;//(hwaveform->GetXaxis()->GetBinCenter(ibin-2 )+hwaveform->GetXaxis()->GetBinCenter(ibin+2))/2;   
+           fitresult->mean = mean;
+	   fitresult->amp=f1->GetParameter(0);
+           fitresult->sigma=f1->GetParameter(1);
+           break;
+
+
+	 }
+	   
+
+	  }
+       else{
+	 mean=0.0;
+	 fitresult->mean=mean;
+       } 
+	   //else{
+	   // mean=(hwaveform->GetBinContent( ibin-1 )+ hwaveform->GetBinContent(ibin+1))/2;
+	   //break;
+	   // }
+       }
+       // fitresult->amp = amp;
+    //fitresult->mean = mean;
+      
+    //    }
+  }
+   
+
+  
   //else if( pmt == PTF::Reference ){
   //  if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",pmt2_piecewise,0,140,4);
   //  ffitfunc->SetParameters( 30.0, 40., 1.0, 0.1 );
@@ -806,7 +881,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
     }
     wrapper.setCurrentEntry(i);
     
-    auto location = wrapper.getDataForCurrentEntry(PTF::Gantry1);
+    auto location = wrapper.getDataForCurrentEntry(PTF::Gantry0);
     auto T=wrapper.getReadingTemperature();
     auto time_F=wrapper.getReadingTime();
     scanpoints.push_back( ScanPoint( location.x, location.y, location.z,time_F.time_c, T.ext_2, nfilled ) );
@@ -823,7 +898,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
         hwaveform->SetBinContent( ibin, pmtsample[ibin-1] );
 	    hwaveform->SetBinError( ibin, errorbar );
       }
-      hwaveform->Scale(digi.fullScaleRange/digiCounts);
+      // hwaveform->Scale(digi.fullScaleRange/digiCounts);
       InitializeFitResult( j, numWaveforms );
       
       // Do pulse finding (if requested)
@@ -835,9 +910,12 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
 
 //       Do simple charge sum calculation
         if( pmt.pmt == 0 ) {
-            ChargeSumPTF(); //original PTF function call here
+            ChargeSumPTF(8135.4); //original PTF function call here
         }
-        
+        if (pmt.type == PTF::PTF_Monitor_PMT ){
+	  ChargeSumPTF(8135.4);
+	  //2500 offset
+ 	}
         // Added by Yuka June 2021 for PMT pulse charge calculation
         if (pmt.type == PTF::mPMT_REV0_PMT) {
             if (pmt.pmt==1) ChargeSum(1.0034,260,271);    //2080 to 2170 ns
@@ -851,7 +929,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
       if( dofit && pulse_location_cut && pmt.pmt == 0 ) dofit = PulseLocationCut(10);
       if( dofit && fft_cut && pmt.pmt == 0 ) dofit = FFTCut();
       //if( dofit && pmt.pmt == 1 ) dofit = MonitorCut( 25. );
-	  dofit = true;
+      dofit =true; //true;
 	  //ButterwothFilter(28.0);//MHz, apply the filter  
       if( dofit ){
         FitWaveform( j, numWaveforms, pmt ); // Fit waveform and copy fit results into TTree

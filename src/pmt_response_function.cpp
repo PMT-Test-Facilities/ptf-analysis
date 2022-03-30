@@ -213,7 +213,7 @@ double pmtresponseped( double * xx, double * p ){
   double signal = 0;
 
   // Use approx equation from eq. 10 of Bellamy
-  double exp0term = w * std::exp( -alpha * ( x - Q0 ) );
+  double exp0term = w *alpha*(x-Q0)*std::exp( -alpha * ( x - Q0 ) );
   if ( x < Q0 ) exp0term = 0.;
   double gaus0term = (1-w) * gaussian( x, Q0, s0 );
   signal = poisson_term( mu, 0 ) * ( gaus0term + exp0term );
@@ -240,12 +240,12 @@ double pmtbackgroundresponseped( double * xx, double *p ){
   double alpha = p[7];
   
   double signal = 0;
-
+ 
   // Use approx equation from eq. 10 of Bellamy
-  double exp0term = w * std::exp( -alpha * ( x - Q0 ) );
+  double exp0term = w *alpha*(x-Q0)*std::exp( -alpha * ( x - Q0 ) );//(x-Q0)
   if ( x < Q0 ) exp0term = 0.;
   double gaus0term = (1-w) * gaussian( x, Q0, s0 );
-  signal = poisson_term( mu, 0 ) * ( gaus0term + exp0term );
+  signal = poisson_term( mu, 0 ) * (exp0term+gaus0term );//gaus0term, mu
 
   return N*signal;
 }
@@ -291,7 +291,7 @@ std::vector< TF1* > get_pmt_response_components_ped( double * p ){
 
   double mu=p[5];
   double approx_sigma = std::sqrt( mu );  
-  unsigned nmax = std::max(5, int(approx_sigma*3+mu) );
+  unsigned nmax =std::max(5, int(approx_sigma*3+mu) );
   
   for (unsigned n=1; n<=nmax; ++n ){
     std::ostringstream fname;
@@ -351,7 +351,7 @@ double model1( double * x, double *p ){
 
   double retval = 0.0;
 
-  retval = w * alpha * exp( -alpha*x[0] );
+  retval = w * alpha* exp( -alpha*x[0] );
   
   retval += (1-w)*poisson_term( mu, 0 ) * PMTResponsePed::get_prob_density( x[0] );
   

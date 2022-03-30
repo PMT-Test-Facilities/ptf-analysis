@@ -13,8 +13,8 @@ VPATH = $(SRCDIR)
 CFLAGS=-c -g -Wall `root-config --cflags` -I${INCDIR}
 LDFLAGS=`root-config --glibs` -lHistPainter -lMinuit -L${ROOTSYS}/lib
 
-TARGET1=field_to_csv.cpp
-TARGET2=acc_to_csv.cpp
+TARGET1=charge_distribution_single.cpp
+TARGET2=charge_distribution_total_2.cpp
 TARGET3=ptf_analysis.cpp
 TARGET4=ptf_ttree_analysis.cpp
 TARGET5=ptf_qe_analysis.cpp
@@ -23,8 +23,8 @@ TARGET7=ptf_charge_analysis.cpp
 TARGET8=ptf_timing_analysis.cpp
 
 TARGET9=temperature_reading.cpp
-TARGET10=mpmt_analysis.cpp
-TARGET11=mpmt_ttree_analysis.cpp
+TARGET10=timing_distribution_single.cpp
+TARGET11=timing_distribution_total.cpp
 TARGET12=mpmt_afterpulse.cpp
 TARGET13=mpmt_afterpulse_auto.cpp
 TARGET14=mpmt_timing_analysis.cpp
@@ -48,7 +48,6 @@ EXECUTABLE13=$(TARGET13:%.cpp=$(BINDIR)/%.app)
 EXECUTABLE14=$(TARGET14:%.cpp=$(BINDIR)/%.app)
 
 EXECUTABLE15=$(TARGET15:%.cpp=$(BINDIR)/%.app)
-	
 FILES= $(wildcard $(SRCDIR)/*.cpp)
 SOURCES=$(FILES)
 
@@ -110,7 +109,7 @@ $(EXECUTABLE6): $(OBJECTS) $(OBJ6)
 
 $(EXECUTABLE7): $(OBJECTS) $(OBJ7)
 	$(CXX) $^ -o $@ $(LDFLAGS)
-	
+
 $(EXECUTABLE8): $(OBJECTS) $(OBJ8)
 	$(CXX) $^ -o $@ $(LDFLAGS)
 
