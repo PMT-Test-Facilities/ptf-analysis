@@ -104,7 +104,8 @@ bool Wrapper::setDataPointers() {
     cout << "false tree or file ppointer" << endl;
     return false;
 }
-  
+
+
   // Set PMT branches
   char branchName[64];
   for (auto pmt : pmtData) {
@@ -117,6 +118,7 @@ bool Wrapper::setDataPointers() {
     }
     pmt.second->branch->SetAddress(pmt.second->data);
   }
+
 
   // Set phidget branches
   for (auto phidget : phidgetData) {
@@ -157,7 +159,6 @@ bool Wrapper::setDataPointers() {
       return false;
     }
   }
-
 
   // Set gantry branches
   for (auto gantry : gantryData) {
@@ -286,13 +287,11 @@ void Wrapper::openFile(const string& fileName, const string& treeName) {
 
   auto res = setDataPointers();
 
-
   if (!res) {
     throw new Exceptions::DataPointerError();
   }
 
   numEntries = tree->GetEntries();
-
   tree->GetEntry(0);
   entry = 0;
 }

@@ -102,36 +102,40 @@ int main(int argc, char** argv) {
 
 
   // Loop over the active channels to do setup.
-
   for(unsigned int i = 0; i < active_channels.size(); i++){ 
-    
     int ch = active_channels[i];
-    
     PTF::PMT PMT = {ch,ch,PTF::mPMT_REV0_PMT};
-
     activePMTs.push_back(PMT);
-
   }
 
+  // Figure out how many events to process per position.  For mPMT it is 1, so usually not set.  For MTS it will be larger.
+  int nevents = 1;
+  if( !config.Get("nevents_per_position", nevents) ){
+    nevents = 1;
+  }
+  cout << "Processing " << nevents << " per position." << endl;
+
+
   vector<PTF::Gantry> gantries = {PTF::Gantry0, PTF::Gantry1};
-  Wrapper wrapper = Wrapper(1, 1024, activePMTs, phidgets, gantries,mPMT_DIGITIZER);
+  Wrapper wrapper = Wrapper(nevents, 1024, activePMTs, phidgets, gantries,mPMT_DIGITIZER);
+  //Wrapper wrapper = Wrapper(10000, 1024, activePMTs, phidgets, gantries,mPMT_DIGITIZER);
   std::cout << "Open file: " << std::endl;
   wrapper.openFile( string(argv[1]), "scan_tree");
   cerr << "Num entries: " << wrapper.getNumEntries() << endl << endl;
   cout << "Points ready " << endl;
-  
 
   // Open the BRB Settings tree 
   wrapper.LoadBrbSettingsTree();
 
-  
   for(unsigned int i = 0; i < active_channels.size(); i++){
     PTF::PMT pmt = activePMTs[i];
+    std::cout << "Channel" << i << std::endl;
     PTFAnalysis *analysis = new PTFAnalysis( outFile, wrapper, 2.1e-3, pmt, string(argv[3]), true );
     if(i == 0) analysis->write_scanpoints();
 
   }
 
+  std::cout << "Closing output file" << std::endl;
   outFile->Write();
   outFile->Close();
     
