@@ -21,5 +21,6 @@ do_pulse_fitting = false
 
 # list of channels to analyze; comma separated list
 
-mpmt_channel_list = 2
+mpmt_channel_list = 2,3
 nevents_per_position = 10000
+nsamples = 512

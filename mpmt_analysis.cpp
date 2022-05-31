@@ -113,11 +113,18 @@ int main(int argc, char** argv) {
   if( !config.Get("nevents_per_position", nevents) ){
     nevents = 1;
   }
-  cout << "Processing " << nevents << " per position." << endl;
+  cout << "Processing up to " << nevents << " per position." << endl;
+
+  // Figure out how many samples per waveform
+  int nsamples = 1024;
+  if( !config.Get("nsamples", nsamples) ){
+    nevents = 1024;
+  }
+  cout << "Processing " << nsamples << " per waveform." << endl;
 
 
   vector<PTF::Gantry> gantries = {PTF::Gantry0, PTF::Gantry1};
-  Wrapper wrapper = Wrapper(nevents, 1024, activePMTs, phidgets, gantries,mPMT_DIGITIZER);
+  Wrapper wrapper = Wrapper(nevents, nsamples, activePMTs, phidgets, gantries,mPMT_DIGITIZER);
   //Wrapper wrapper = Wrapper(10000, 1024, activePMTs, phidgets, gantries,mPMT_DIGITIZER);
   std::cout << "Open file: " << std::endl;
   wrapper.openFile( string(argv[1]), "scan_tree");
