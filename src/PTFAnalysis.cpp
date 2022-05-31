@@ -736,8 +736,10 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
 << " " << savenowf_count << " " << curscanpoint.x() << std::endl; 
       // check if we should clone waveform histograms
       if ( save_waveforms && savewf_count<500 && savenowf_count<500 ){
-	    if  ( fabs( curscanpoint.x() - 0.46 ) < 0.0005 && 
-	      fabs( curscanpoint.y() - 0.38 ) < 0.0005 ) {
+	// For mPMT and MTS just save the first 500 events.
+	// For PTF save the first 500 events near the PMT position
+	if( ( pmt.type == PTF::mPMT_REV0_PMT) or ( fabs( curscanpoint.x() - 0.46 ) < 0.0005 && 
+						   fabs( curscanpoint.y() - 0.38 ) < 0.0005 )) {
            //   std::cout << "Success:" << std::endl;
           std::string hwfname = "hwf_" + std::to_string( nfilled );
           std::string hfftmname = "hfftm_" + std::to_string( nfilled );
