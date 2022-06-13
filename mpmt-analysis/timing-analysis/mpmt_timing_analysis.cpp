@@ -61,12 +61,12 @@ int main( int argc, char* argv[] ) {
   ///////////////////////Getting the TTrees/////////////////////////////////////
   // Get the waveform Fit TTree
   std::cout << "TTree 0" << std::endl;
-  TTree * tt0 = (TTree*)fin->Get("ptfanalysis0"); // mpmt signal
+  TTree * tt0 = (TTree*)fin->Get("ptfanalysis1"); // mpmt signal
   WaveformFitResult * wf0 = new WaveformFitResult;
   if(tt0) wf0->SetBranchAddresses( tt0 );
 
   std::cout << "TTree 1" << std::endl;
-  TTree * tt1 = (TTree*)fin->Get("ptfanalysis1"); // injected pulse
+  TTree * tt1 = (TTree*)fin->Get("ptfanalysis3"); // injected pulse
   WaveformFitResult * wf1 = new WaveformFitResult;
   wf1->SetBranchAddresses( tt1 );
 
@@ -89,7 +89,7 @@ int main( int argc, char* argv[] ) {
   /////////////////histograms to calculate the time difference (transit time)/////////////////////
   TH1F *tdiff = new TH1F("time diff","ch 0 minus ch 1 time difference",100,-5,1);
   TH1F *tdiff0 = new TH1F("time diff0","pmt0 time relative to trigger time",200,316,326);
-  TH1F *tdiff1 = new TH1F("time diff1","pmt0 time relative to trigger time",100,54,60); //42,52
+  TH1F *tdiff1 = new TH1F("time diff1","pmt0 time relative to trigger time",100,0,1000); //42,52
   //  TH1F *tdiff1 = new TH1F("time diff1","pmt1 time relative to trigger time",200,70,80);
   TH1F *tdiff2 = new TH1F("time diff2","timediff2",800,-6,1);
   TH1F *tdiff_inj = new TH1F("time diff inj","time difference injected pulses",200,-9.3,-8.8);
@@ -119,7 +119,7 @@ int main( int argc, char* argv[] ) {
   TProfile *tdiff_vs_ph_prof = new TProfile("tdiff_vs_ph_prof", "time difference vs pulse height - profile", 20,0,0.000488/0.018*80);
   
   TH1F *ph[2];
-  ph[0] = new TH1F("ph0","pulse heights",360,0,0.000488/0.05685219014*360);
+  ph[0] = new TH1F("ph0","pulse heights",360,0,0.000488/0.01342004952*360);
   ph[1] = new TH1F("ph1","pulse heights",2000,0,0.000488/0.018*2000);//1 adc count == 0.00048v, 1 adc count == 0.48/0.018 mpe, 0.48 mv == 26 mpe => 1 pe == 18 mv 
   std::cout << "looping tree " << tt0->GetEntries() << " " << tt1->GetEntries() << std::endl;
   int total_hits0 = 0, success_Fits0 = 0;
@@ -130,13 +130,10 @@ int main( int argc, char* argv[] ) {
   int input, slices, runNo;
   std::cout << "input iteration :";
   std::cin >> input;
-  std::cout << std::endl;
-  std::cout << "Divide into how many slices?";
+  std::cout << "Divide into how many slices? ";
   std::cin >> slices;
-  std::cout << std::endl;
-  std::cout << "Enter Run Number";
+  std::cout << "Enter Run Number ";
   std::cin >> runNo;
-  std::cout << std::endl;
   // loop the first scan point and print something 
   for(int i = input*tt0->GetEntries()/slices; i < (input+1)*tt0->GetEntries()/slices-1; i++){
     //for(int i = 0; i < 50000; i++){
@@ -164,7 +161,7 @@ int main( int argc, char* argv[] ) {
 
           //pulse_height[j] = (baseline[j] - wf->pulseCharges[k])/0.01;
           //pulse_height[j] = (wf->pulseCharges[k])/0.018 ;
-          pulse_height[j] = (wf->pulseCharges[k])/0.05685219014;
+          pulse_height[j] = (wf->pulseCharges[k])/0.01342004952;
           //pulse_height[j] = (wf->pulseCharges[k])/0.016;
           //          std::cout << "pulse charge: " << wf->pulseCharges[k] << std::endl;
         }
@@ -350,7 +347,7 @@ int main( int argc, char* argv[] ) {
   TCanvas *c2 = new TCanvas("c2");
   tdiff1->Draw();
   //TF1 *gaus = new TF1("gaus","gaus",321.5,324);
-  TF1 *gaus2 = new TF1("gaus2","gaus",55.35,56.8);//45.5,48
+  TF1 *gaus2 = new TF1("gaus2","gaus",58.7,60.1);//45.5,48
   //  TF1 *gaus2 = new TF1("gaus2","gaus",74,75.6);
   tdiff1->Fit("gaus2","R");
   tdiff1->SetXTitle("time difference (ns)"); 
@@ -358,14 +355,28 @@ int main( int argc, char* argv[] ) {
   gStyle->SetOptFit(1111);
 
   double mean1 = gaus2->GetParameter(0);
+  double start1 = gaus2->GetX((int)(gaus2->GetParameter(0)/2), 0, gaus2->GetX((int)gaus2->GetParameter(0)));
+  double end1 = gaus2->GetX((int)(gaus2->GetParameter(0)/2), gaus2->GetX((int)gaus2->GetParameter(0)), 2*gaus2->GetX((int)gaus2->GetParameter(0)));
+  std::cout << "Start at " << start1 << " and end at " << end1 << std::endl;
   double hm1 = mean1/2.0;
-  double start1 = -1, end1 = -1;
-  for (int i = 1; i < tdiff1->GetNbinsX(); i++){
+  double value;
+  //std::cout << "Debugging...." << std::endl;
+  //std::cout << "Mean value is :" << hm1 << std::endl;
+  //std::cout << "FWHM value is :" << gaus2->GetParameter(3)/2.35482 << std::endl;
+  /*for (int step = 0; step <= 5.e8; step++) {
+    value = gaus2->Eval(50+step*(20/(5.e8)));
+    if (value>hm1-1.e-3 && value<hm1+1.e-3){
+      start1 = 50+step*(20/(5.e8));
+      std::cout << value << " " << start1 << std::endl;
+    }
+  }*/
+  
+  /*for (int i = 1; i < tdiff1->GetNbinsX(); i++){
     double tmp = tdiff1->GetBinContent(i);
     if(tmp > hm1 && start1 < 0) start1 = tdiff1->GetBinCenter(i);
     if(tmp < hm1 && start1 > 0 && end1 < 0) end1 = tdiff1->GetBinCenter(i);
     
-  }
+    }*/
   double fwhm = end1-start1;
   
   int binmax = ph[0]->GetMaximumBin();
@@ -380,12 +391,21 @@ int main( int argc, char* argv[] ) {
   file1 << "mean1 : " << mean1 << " " << hm1 << " " 
             << start1 << " "
             << end1 << ". FWHM from Fit is "
-            << fwhm << " and from histogram is "
+            << fwhm << ". FWHM from histogram is "
             << fwhm_hist
             << "ns   !! " << tdiff1->GetRMS() << " "
             << std::endl << "Pulse height hist peaks at " << x 
             << std::endl;
   file1.close();
+
+  std::cout << "mean1 : " << mean1 << " " << hm1 << " " 
+            << start1 << " "
+            << end1 << ". FWHM from Fit is "
+            << fwhm << " and from histogram is "
+            << fwhm_hist
+            << "ns   !! " << tdiff1->GetRMS() << " "
+            << std::endl << "Pulse height hist peaks at " << x 
+            << std::endl;
 
   std::ofstream file2;
   if (input==0) file2.open("TimingData_" + TString::Itoa(runNo,10) + ".txt");

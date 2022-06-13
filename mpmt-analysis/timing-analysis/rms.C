@@ -19,9 +19,10 @@ void rms() {
   c1->SetGrid();
 
   int runNo;
+  cout << "Run Number? ";
   cin >> runNo;
   
-  TH1F *hist = new TH1F("hist", "", 16, 1.5, 1.9);
+  TH1F *hist = new TH1F("hist", "", 25, 1.5, 1.7);
   ifstream file;
   file.open("TimingData_" + TString::Itoa(runNo,10) + ".txt");
   double value;
@@ -42,8 +43,12 @@ void rms() {
   hist->SetLineColor(kOrange-3);
   hist->SetFillColor(kRed-4);
   hist->Draw();
+  ofstream file1;
+  file1.open("rmsValues.txt", ios::app);
   double rms;
   rms = hist->GetRMS();
+  file1 << "RMS value of run " << runNo << " is " << rms << std::endl;
+  file1.close();
   cout << "RMS is : " << rms << endl;
   c1->Update();
   c1->GetFrame()->SetFillColor(19);
