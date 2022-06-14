@@ -89,7 +89,7 @@ int main( int argc, char* argv[] ) {
   /////////////////histograms to calculate the time difference (transit time)/////////////////////
   TH1F *tdiff = new TH1F("time diff","ch 0 minus ch 1 time difference",100,-5,1);
   TH1F *tdiff0 = new TH1F("time diff0","pmt0 time relative to trigger time",200,316,326);
-  TH1F *tdiff1 = new TH1F("time diff1","pmt0 time relative to trigger time",100,0,1000); //42,52
+  TH1F *tdiff1 = new TH1F("time diff1","pmt0 time relative to trigger time",10000,-1000,1000); //42,52
   //  TH1F *tdiff1 = new TH1F("time diff1","pmt1 time relative to trigger time",200,70,80);
   TH1F *tdiff2 = new TH1F("time diff2","timediff2",800,-6,1);
   TH1F *tdiff_inj = new TH1F("time diff inj","time difference injected pulses",200,-9.3,-8.8);
