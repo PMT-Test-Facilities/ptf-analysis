@@ -31,6 +31,32 @@ double funcEMG(double *x, double *p){
  return y ;
 }
 
+Double_t fAssymGauss(Double_t *x, Double_t *p)
+{
+	Double_t f=0,
+			 y1=0,
+			 y2=0,
+			 stot=0,
+			 n=0;
+
+	y1=x[0]-p[1];
+	y1*=y1;
+	y1/=2*p[2]*p[2];
+
+	y2=x[0]-p[1];
+	y2*=y2;
+	y2/=2*p[3]*p[3];
+
+	stot=p[2]+p[3];
+	n=2.;
+	n/=stot;
+	n*=p[0];
+	if( x[0]<p[1] ){ f+=TMath::Exp( -y1 ); }
+	else{ f+=TMath::Exp( -y2 ); }
+
+	return n*f;
+}
+
 double bessel(double *x, double *p){
   //exponential gaussian used for Fitting
   double xx = (x[0] - p[1]) * p[0];
@@ -89,7 +115,7 @@ int main( int argc, char* argv[] ) {
   /////////////////histograms to calculate the time difference (transit time)/////////////////////
   TH1F *tdiff = new TH1F("time diff","ch 0 minus ch 1 time difference",100,-5,1);
   TH1F *tdiff0 = new TH1F("time diff0","pmt0 time relative to trigger time",200,316,326);
-  TH1F *tdiff1 = new TH1F("time diff1","pmt0 time relative to trigger time",10000,-1000,1000); //42,52
+  TH1F *tdiff1 = new TH1F("time diff1","pmt0 time relative to trigger time",100,60,67); //42,52
   //  TH1F *tdiff1 = new TH1F("time diff1","pmt1 time relative to trigger time",200,70,80);
   TH1F *tdiff2 = new TH1F("time diff2","timediff2",800,-6,1);
   TH1F *tdiff_inj = new TH1F("time diff inj","time difference injected pulses",200,-9.3,-8.8);
@@ -116,10 +142,10 @@ int main( int argc, char* argv[] ) {
 
 
   TH2F *tdiff_vs_ph = new TH2F("tdiff_vs_ph","time difference vs pulse height",40,0,0.000488/0.018*80,50,70, 80);
-  TProfile *tdiff_vs_ph_prof = new TProfile("tdiff_vs_ph_prof", "time difference vs pulse height - profile", 20,0,0.000488/0.018*80);
+  TProfile *tdiff_vs_ph_prof = new TProfile("tdiff_vs_ph_prof", "time difference vs pulse height - profile", 20,0,0.000488/0.018);
   
   TH1F *ph[2];
-  ph[0] = new TH1F("ph0","pulse heights",360,0,0.000488/0.01342004952*360);
+  ph[0] = new TH1F("ph0","pulse heights",25,0,0.000488/0.00365999794*25);
   ph[1] = new TH1F("ph1","pulse heights",2000,0,0.000488/0.018*2000);//1 adc count == 0.00048v, 1 adc count == 0.48/0.018 mpe, 0.48 mv == 26 mpe => 1 pe == 18 mv 
   std::cout << "looping tree " << tt0->GetEntries() << " " << tt1->GetEntries() << std::endl;
   int total_hits0 = 0, success_Fits0 = 0;
@@ -161,7 +187,7 @@ int main( int argc, char* argv[] ) {
 
           //pulse_height[j] = (baseline[j] - wf->pulseCharges[k])/0.01;
           //pulse_height[j] = (wf->pulseCharges[k])/0.018 ;
-          pulse_height[j] = (wf->pulseCharges[k])/0.01342004952;
+          pulse_height[j] = (wf->pulseCharges[k])/(0.00365999794);
           //pulse_height[j] = (wf->pulseCharges[k])/0.016;
           //          std::cout << "pulse charge: " << wf->pulseCharges[k] << std::endl;
         }
@@ -347,24 +373,39 @@ int main( int argc, char* argv[] ) {
   TCanvas *c2 = new TCanvas("c2");
   tdiff1->Draw();
   //TF1 *gaus = new TF1("gaus","gaus",321.5,324);
-  TF1 *gaus2 = new TF1("gaus2","gaus",58.7,60.1);//45.5,48
-  //  TF1 *gaus2 = new TF1("gaus2","gaus",74,75.6);
-  tdiff1->Fit("gaus2","R");
+  
+  int bin1 = tdiff1->FindFirstBinAbove(tdiff1->GetMaximum()*0.3);
+  int bin2 = tdiff1->FindLastBinAbove(tdiff1->GetMaximum()*0.3);
+
+  TF1 *gaus2 = new TF1("gaus2","gaus", tdiff1->GetBinCenter(bin1), tdiff1->GetBinCenter(bin2));//45.5,48
+  TF1 *fagaus = new TF1("fagaus", fAssymGauss, tdiff1->GetBinCenter(bin1), tdiff1->GetBinCenter(bin2), 4);
+  //  TF1 *fagaus = new TF1("fagaus","gaus",74,75.6);
+  gaus2->SetLineWidth(0);  
+  tdiff1->Fit("gaus2", "R+");
+  //gStyle->SetOptFit(0);
+  fagaus->SetParameter(0, gaus2->GetParameter(0));
+  fagaus->SetParameter(1, gaus2->GetParameter(1));
+  fagaus->SetParameter(2, gaus2->GetParameter(2));
+  fagaus->SetParameter(3, gaus2->GetParameter(2));
+  tdiff1->Fit("fagaus", "R+");
   tdiff1->SetXTitle("time difference (ns)"); 
 
   gStyle->SetOptFit(1111);
 
-  double mean1 = gaus2->GetParameter(0);
-  double start1 = gaus2->GetX((int)(gaus2->GetParameter(0)/2), 0, gaus2->GetX((int)gaus2->GetParameter(0)));
-  double end1 = gaus2->GetX((int)(gaus2->GetParameter(0)/2), gaus2->GetX((int)gaus2->GetParameter(0)), 2*gaus2->GetX((int)gaus2->GetParameter(0)));
+  double maxX = fagaus->GetMaximumX(tdiff1->GetBinCenter(bin1),tdiff1->GetBinCenter(bin2));
+  double max = fagaus->GetMaximum(tdiff1->GetBinCenter(bin1),tdiff1->GetBinCenter(bin2));
+  double mean1 = fagaus->GetParameter(0);
+  double start1 = fagaus->GetX(max/2, 0, maxX);
+  double end1 = fagaus->GetX(max/2, maxX, 2*maxX);
   std::cout << "Start at " << start1 << " and end at " << end1 << std::endl;
+  double fwhm = end1 - start1;
   double hm1 = mean1/2.0;
   double value;
   //std::cout << "Debugging...." << std::endl;
   //std::cout << "Mean value is :" << hm1 << std::endl;
-  //std::cout << "FWHM value is :" << gaus2->GetParameter(3)/2.35482 << std::endl;
+  //std::cout << "FWHM value is :" << fagaus->GetParameter(3)/2.35482 << std::endl;
   /*for (int step = 0; step <= 5.e8; step++) {
-    value = gaus2->Eval(50+step*(20/(5.e8)));
+    value = fagaus->Eval(50+step*(20/(5.e8)));
     if (value>hm1-1.e-3 && value<hm1+1.e-3){
       start1 = 50+step*(20/(5.e8));
       std::cout << value << " " << start1 << std::endl;
@@ -377,22 +418,16 @@ int main( int argc, char* argv[] ) {
     if(tmp < hm1 && start1 > 0 && end1 < 0) end1 = tdiff1->GetBinCenter(i);
     
     }*/
-  double fwhm = end1-start1;
   
   int binmax = ph[0]->GetMaximumBin();
   double x = ph[0]->GetXaxis()->GetBinCenter(binmax);
-  int bin1 = tdiff1->FindFirstBinAbove(tdiff1->GetMaximum()/2);
-  int bin2 = tdiff1->FindLastBinAbove(tdiff1->GetMaximum()/2);
-  double fwhm_hist = tdiff1->GetBinCenter(bin2) - tdiff1->GetBinCenter(bin1);
 
   std::ofstream file1;
-  if (input==0) file1.open("TimingResolutionRecord_" + TString::Itoa(runNo,10) + ".txt");
-  else file1.open("TimingResolutionRecord_" + TString::Itoa(runNo,10) + ".txt", std::ios::app);
-  file1 << "mean1 : " << mean1 << " " << hm1 << " " 
+  file1.open("TimingResolutionRecord.txt", std::ios::app);
+  file1 << "Run number : " << TString::Itoa(runNo,10) << " mean1 : " << mean1 << " " << hm1 << " " 
             << start1 << " "
-            << end1 << ". FWHM from Fit is "
-            << fwhm << ". FWHM from histogram is "
-            << fwhm_hist
+            << end1 << ". FWHM is "
+            << fwhm  
             << "ns   !! " << tdiff1->GetRMS() << " "
             << std::endl << "Pulse height hist peaks at " << x 
             << std::endl;
@@ -400,9 +435,8 @@ int main( int argc, char* argv[] ) {
 
   std::cout << "mean1 : " << mean1 << " " << hm1 << " " 
             << start1 << " "
-            << end1 << ". FWHM from Fit is "
-            << fwhm << " and from histogram is "
-            << fwhm_hist
+            << end1 << ". FWHM is "
+            << fwhm  
             << "ns   !! " << tdiff1->GetRMS() << " "
             << std::endl << "Pulse height hist peaks at " << x 
             << std::endl;
@@ -454,12 +488,14 @@ int main( int argc, char* argv[] ) {
   //  ph[1]->Draw("SAME");
   //ph[1]->SetLineColor(2);
 
-  TLegend *leg = new TLegend(0.5,0.7,0.79,0.89);
+  /*TLegend *leg = new TLegend(0.5,0.7,0.79,0.89);
   leg->AddEntry(ph[0],"Channel 0");
   leg->AddEntry(ph[1],"Channel 1");
-  leg->Draw("SAME");    
+  leg->Draw("SAME");*/    
   
-  c3->SaveAs("pulse_heights.png");
+  c3->SaveAs("pulse_heights_" + TString::Itoa(runNo,10) + "_slice_" + TString::Itoa(input,10) \
++ ".png");
+  
   if(0){
 
   TCanvas *c4 = new TCanvas("C4");

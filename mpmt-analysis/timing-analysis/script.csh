@@ -1,4 +1,6 @@
+cd ../
 make
+cd Jun23,1mVThreshold
 declare -i slice
 echo "Divide data into how many slices?"
 read slice
@@ -7,6 +9,6 @@ echo "Run Number?"
 read runNo
 for (( i = 0; i < slice; i++ ))
 do
-    echo -e "$i\n$slice\n$runNo" | ./mpmt_timing_analysis.exe mpmt_Analysis_run0"${runNo}".root
+    echo -e "$i\n$slice\n$runNo" | .././mpmt_timing_analysis.exe ../mpmt_Analysis_run0"${runNo}".root
 done
-echo -e "$runNo" | root rms.C
+echo -e "$runNo" | root ../rms.C

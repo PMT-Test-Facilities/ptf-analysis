@@ -22,7 +22,7 @@ void rms() {
   cout << "Run Number? ";
   cin >> runNo;
   
-  TH1F *hist = new TH1F("hist", "", 25, 1.5, 1.7);
+  TH1F *hist = new TH1F("hist", "", 30, 2.51, 2.6);
   ifstream file;
   file.open("TimingData_" + TString::Itoa(runNo,10) + ".txt");
   double value;
