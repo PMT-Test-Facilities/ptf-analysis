@@ -87,12 +87,12 @@ int main( int argc, char* argv[] ) {
   ///////////////////////Getting the TTrees/////////////////////////////////////
   // Get the waveform Fit TTree
   std::cout << "TTree 0" << std::endl;
-  TTree * tt0 = (TTree*)fin->Get("ptfanalysis1"); // mpmt signal
+  TTree * tt0 = (TTree*)fin->Get("ptfanalysis0"); // mpmt signal
   WaveformFitResult * wf0 = new WaveformFitResult;
   if(tt0) wf0->SetBranchAddresses( tt0 );
 
   std::cout << "TTree 1" << std::endl;
-  TTree * tt1 = (TTree*)fin->Get("ptfanalysis3"); // injected pulse
+  TTree * tt1 = (TTree*)fin->Get("ptfanalysis1"); // injected pulse
   WaveformFitResult * wf1 = new WaveformFitResult;
   wf1->SetBranchAddresses( tt1 );
 
@@ -115,7 +115,7 @@ int main( int argc, char* argv[] ) {
   /////////////////histograms to calculate the time difference (transit time)/////////////////////
   TH1F *tdiff = new TH1F("time diff","ch 0 minus ch 1 time difference",100,-5,1);
   TH1F *tdiff0 = new TH1F("time diff0","pmt0 time relative to trigger time",200,316,326);
-  TH1F *tdiff1 = new TH1F("time diff1","pmt0 time relative to trigger time",100,60,67); //42,52
+  TH1F *tdiff1 = new TH1F("time diff1","pmt0 time relative to trigger time",100,54,61); //42,52
   //  TH1F *tdiff1 = new TH1F("time diff1","pmt1 time relative to trigger time",200,70,80);
   TH1F *tdiff2 = new TH1F("time diff2","timediff2",800,-6,1);
   TH1F *tdiff_inj = new TH1F("time diff inj","time difference injected pulses",200,-9.3,-8.8);
@@ -145,7 +145,7 @@ int main( int argc, char* argv[] ) {
   TProfile *tdiff_vs_ph_prof = new TProfile("tdiff_vs_ph_prof", "time difference vs pulse height - profile", 20,0,0.000488/0.018);
   
   TH1F *ph[2];
-  ph[0] = new TH1F("ph0","pulse heights",25,0,0.000488/0.00365999794*25);
+  ph[0] = new TH1F("ph0","pulse heights",400,0,0.000488/0.05685219014*400);
   ph[1] = new TH1F("ph1","pulse heights",2000,0,0.000488/0.018*2000);//1 adc count == 0.00048v, 1 adc count == 0.48/0.018 mpe, 0.48 mv == 26 mpe => 1 pe == 18 mv 
   std::cout << "looping tree " << tt0->GetEntries() << " " << tt1->GetEntries() << std::endl;
   int total_hits0 = 0, success_Fits0 = 0;
@@ -160,6 +160,8 @@ int main( int argc, char* argv[] ) {
   std::cin >> slices;
   std::cout << "Enter Run Number ";
   std::cin >> runNo;
+  float pulseCount = 0.;
+  float pulseCount2 = 0.;
   // loop the first scan point and print something 
   for(int i = input*tt0->GetEntries()/slices; i < (input+1)*tt0->GetEntries()/slices-1; i++){
     //for(int i = 0; i < 50000; i++){
@@ -173,7 +175,7 @@ int main( int argc, char* argv[] ) {
     // find the pulses in list of pulses
     double pulse_time[2] = {-1,-1};
     double pulse_height[2] {-1,-1};
-
+   
     for(int j =0; j < 2; j++){
       WaveformFitResult *wf;
       if(j==0) wf = wf0;
@@ -181,13 +183,14 @@ int main( int argc, char* argv[] ) {
       for(int k = 0; k < wf->numPulses; k++){
         //if(wf->pulseTimes[k] > 2420 && wf->pulseTimes[k] < 2480){ // look for laser pulse
         if(wf->pulseTimes[k] > 2020 && wf->pulseTimes[k] < 2240){ // look for laser pulse
+	  pulseCount += 1.0;
           pulse_time[j] = wf->pulseTimes[k];
           if(j == 0 && 0) std::cout << "found " << i << " " << wf->pulseTimes[k] << " "
                                << (wf->pulseCharges[k])/0.018 << std::endl;
 
           //pulse_height[j] = (baseline[j] - wf->pulseCharges[k])/0.01;
           //pulse_height[j] = (wf->pulseCharges[k])/0.018 ;
-          pulse_height[j] = (wf->pulseCharges[k])/(0.00365999794);
+          pulse_height[j] = (wf->pulseCharges[k])/(0.05685219014);
           //pulse_height[j] = (wf->pulseCharges[k])/0.016;
           //          std::cout << "pulse charge: " << wf->pulseCharges[k] << std::endl;
         }
@@ -198,6 +201,7 @@ int main( int argc, char* argv[] ) {
 
     if(pulse_height[1] < 0.5) total_nohits += 1.0;
     if(pulse_height[1] > 0.5 && pulse_height[1] < 1.5) total_pe += 1.0;
+    if(pulse_height[0] > 0.5 && pulse_height[0] < 1.5) pulseCount2 += 1.0;
     if(pulse_height[1] > 1.5 && pulse_height[1] < 2.5) total_pe += 2.0;
     if(pulse_height[1] > 2.5 && pulse_height[1] < 3.5) total_pe += 3.0;
     if(pulse_height[1] > 3.5 && pulse_height[1] < 4.5) total_pe += 4.0;
@@ -322,7 +326,8 @@ int main( int argc, char* argv[] ) {
   std::cout << "p(0) calc: " << calc_p0 << std::endl;
   double better_lambda = - log(total_nohits/(double)tt0->GetEntries());
   std::cout << "better lamba: " << better_lambda << std::endl;
-
+  std::cout << "Total number of 1 PE pulses: " << pulseCount2 << std::endl;
+  std::cout << "Test number: " << pulseCount << std::endl;
     
     TCanvas *c = new TCanvas("c");
 
