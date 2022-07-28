@@ -36,9 +36,10 @@ void simple_threshold_technique(TH1D *hwaveform, WaveformFitResult *fitresult, P
     baseline = BrbSettingsTree::Get()->GetBaseline(pmt.channel);
   }
 
-  double threshold = baseline - 0.004;
+  //  double threshold = baseline - 0.004;
+  double threshold = baseline - 0.002;
     
-    if (pmt.channel == 1) threshold = baseline - 0.2;
+  //  if (pmt.channel == 4) threshold = baseline;
 
   int nsamples = hwaveform->GetNbinsX();
 
@@ -61,6 +62,8 @@ void simple_threshold_technique(TH1D *hwaveform, WaveformFitResult *fitresult, P
       if(fitresult->numPulses < MAX_PULSES){
         fitresult->pulseTimes[fitresult->numPulses] = min_bin * 8.0;
         fitresult->pulseCharges[fitresult->numPulses] = baseline - min_value;
+	//	  std::cout<<"PulseCharge:"<<fitresult->pulseCharges[fitresult->numPulses]<<std::endl;
+
 
         //if(0)std::cout << "Pulse found : " << fitresult->numPulses << " " << min_bin
         //          << " " << min_value << " " << std::endl;
