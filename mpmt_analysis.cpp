@@ -116,9 +116,9 @@ int main(int argc, char** argv) {
   cout << "Processing up to " << nevents << " per position." << endl;
 
   // Figure out how many samples per waveform
-  int nsamples = 1024;
+  int nsamples = 4096; //1024
   if( !config.Get("nsamples", nsamples) ){
-    nevents = 1024;
+    nsamples = 4096; //1024
   }
   cout << "Processing " << nsamples << " per waveform." << endl;
 

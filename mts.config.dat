@@ -1,26 +1,19 @@
-# ===========================================================
-# General parameters
-# ===========================================================
-
-# Turn on if running ptf_analysis with output to a terminal
-# Output formatting does not work if piped to a text file
+# General parameters                                                                                                                                                                                                 # ===========================================================                                                                                                                                                        
+# Turn on if running ptf_analysis with output to a terminal                                                                                                                                                          # Output formatting does not work if piped to a text file                                                                                                                                                             
 terminal_output = true
 
-# ===========================================================
-# PTFAnalysis parameters
-# ===========================================================
+# ===========================================================                                                                                                                                                        # PTFAnalysis parameters                                                                                                                                                                                             # ===========================================================                                                                                                                                                         
 
-# Turn on to pre-select waveforms to be fitted
-# Considerably speeds up analysis
+# Turn on to pre-select waveforms to be fitted                                                                                                                                                                       # Considerably speeds up analysis                                                                                                                                                                                     
 pulse_location_cut = false
 fft_cut = false
 do_pulse_finding = true
-do_pulse_fitting = false
+do_pulse_fitting = true
 
-# mPMT parameters
 
-# list of channels to analyze; comma separated list
-
-mpmt_channel_list = 2,3
-nevents_per_position = 10000
-nsamples = 512
+# mPMT parameters                                                                                                                                                                                                    
+# list of channels to analyze; comma separated list                                                                                                                                                                  
+mpmt_channel_list = 4
+#activePMTs = 4
+nevents_per_position = 4000
+#nsamples = 256
