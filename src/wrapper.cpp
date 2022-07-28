@@ -228,6 +228,7 @@ bool Wrapper::setDataPointers() {
     std::cout << "Did not event timestamp branch." << std::endl;
   }
 
+
    // TBranch
    //   *ACC_x= tree->GetBranch("gantry0_x"), *g0Y = tree->GetBranch("gantry0_y"), *g0Z = tree->GetBranch("gantry0_z"),
    //     *ACC_y = tree->GetBranch("gantry0_rot"), *g0Phi = tree->GetBranch("gantry0_tilt"),
@@ -368,6 +369,9 @@ void Wrapper::setCurrentEntry(unsigned long long entry) {
     throw new Exceptions::NoFileIsOpen();
   }
   if (entry >= numEntries) {
+    std::cout << "Entries " << entry 
+	      << " is bigger than " << numEntries
+	      << ".  Bad. " << std::endl;
     throw new Exceptions::EntryOutOfRange();
   }
 
