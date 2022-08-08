@@ -115,10 +115,11 @@ int main( int argc, char* argv[] ) {
   /////////////////histograms to calculate the time difference (transit time)/////////////////////
   TH1F *tdiff = new TH1F("time diff","ch 0 minus ch 1 time difference",100,-5,1);
   TH1F *tdiff0 = new TH1F("time diff0","pmt0 time relative to trigger time",200,316,326);
-  TH1F *tdiff1 = new TH1F("time diff1","pmt0 time relative to trigger time",100,54,61); //42,52
+  TH1F *tdiff1 = new TH1F("time diff1","pmt0 time relative to trigger time",150,53,60); //42,52
   //  TH1F *tdiff1 = new TH1F("time diff1","pmt1 time relative to trigger time",200,70,80);
   TH1F *tdiff2 = new TH1F("time diff2","timediff2",800,-6,1);
   TH1F *tdiff_inj = new TH1F("time diff inj","time difference injected pulses",200,-9.3,-8.8);
+  TH2F *tdiff_ph = new TH2F("tdiff_ph","tdiff vs pulse height",200,0.49,2.8,200,53,62);
 
 
   TH1F *tdiff00 = new TH1F("time diff00","pmt1 time relative to trigger time",50,325,333);
@@ -145,7 +146,7 @@ int main( int argc, char* argv[] ) {
   TProfile *tdiff_vs_ph_prof = new TProfile("tdiff_vs_ph_prof", "time difference vs pulse height - profile", 20,0,0.000488/0.018);
   
   TH1F *ph[2];
-  ph[0] = new TH1F("ph0","pulse heights",400,0,0.000488/0.05685219014*400);
+  ph[0] = new TH1F("ph0","pulse heights",200,0,0.000488/0.05685194556*200);
   ph[1] = new TH1F("ph1","pulse heights",2000,0,0.000488/0.018*2000);//1 adc count == 0.00048v, 1 adc count == 0.48/0.018 mpe, 0.48 mv == 26 mpe => 1 pe == 18 mv 
   std::cout << "looping tree " << tt0->GetEntries() << " " << tt1->GetEntries() << std::endl;
   int total_hits0 = 0, success_Fits0 = 0;
@@ -175,30 +176,39 @@ int main( int argc, char* argv[] ) {
     // find the pulses in list of pulses
     double pulse_time[2] = {-1,-1};
     double pulse_height[2] {-1,-1};
-   
+    double pulses;
+    
     for(int j =0; j < 2; j++){
       WaveformFitResult *wf;
       if(j==0) wf = wf0;
       if(j==1) wf = wf1;
       for(int k = 0; k < wf->numPulses; k++){
+	pulses = 0.;
         //if(wf->pulseTimes[k] > 2420 && wf->pulseTimes[k] < 2480){ // look for laser pulse
-        if(wf->pulseTimes[k] > 2020 && wf->pulseTimes[k] < 2240){ // look for laser pulse
-	  pulseCount += 1.0;
+	if(wf->pulseTimes[k] > 2020 && wf->pulseTimes[k] < 2240){ //2020, 2240
+	  if (j == 0) pulseCount += 1.0;
+	  //pulses += 1.0;
           pulse_time[j] = wf->pulseTimes[k];
           if(j == 0 && 0) std::cout << "found " << i << " " << wf->pulseTimes[k] << " "
                                << (wf->pulseCharges[k])/0.018 << std::endl;
 
           //pulse_height[j] = (baseline[j] - wf->pulseCharges[k])/0.01;
           //pulse_height[j] = (wf->pulseCharges[k])/0.018 ;
-          pulse_height[j] = (wf->pulseCharges[k])/(0.05685219014);
+          pulse_height[j] = (wf->pulseCharges[k])/(0.05685194556);
           //pulse_height[j] = (wf->pulseCharges[k])/0.016;
           //          std::cout << "pulse charge: " << wf->pulseCharges[k] << std::endl;
         }
       }
+      //std::cout << wf->numPulses << " ok " << pulses << std::endl;
     }
-    ph[0]->Fill(pulse_height[0]);
+    //std::ofstream file3;
+    //file3.open("PulseHeightValues.txt",std::ios::app);
+    //file3 << pulse_height[0] << std::endl;
+    //file3.close();
+    //ph[0]->Fill(pulse_height[0]);
     ph[1]->Fill(pulse_height[1]);
 
+    //pulseCount += 1.0;
     if(pulse_height[1] < 0.5) total_nohits += 1.0;
     if(pulse_height[1] > 0.5 && pulse_height[1] < 1.5) total_pe += 1.0;
     if(pulse_height[0] > 0.5 && pulse_height[0] < 1.5) pulseCount2 += 1.0;
@@ -256,6 +266,9 @@ int main( int argc, char* argv[] ) {
       tdiff_vs_ph_prof->Fill(pulse_height[1],td);
     }// ch 1 to trigger
 
+    ph[0]->Fill(pulse_height[0]);
+    std::ofstream file9;
+    file9.open("TransitTime.txt",std::ios::app);    
     int phase = ((int)(time18-0.5)) % 8 ;
     if(pulse_height[0] < 3.5 && pulse_height[0] > 0.5){
 
@@ -269,12 +282,18 @@ int main( int argc, char* argv[] ) {
       if(phase == 6) extra = 0.07;
       if(phase == 7) extra = 0.18;
 
+      //ph[0]->Fill(pulse_height[0]);
       double mtdiff = time0-time1;
+      file9 << mtdiff << std::endl;
+      file9.close();
+      //std::cout << time0 << " Tere MA ka Sakinaka" << mtdiff << std::endl;
+      
       //double mtdiff = time1-time18 - extra;
 
       //      if(phase == 2 || phase==3)
       //if(phase != 6)
       tdiff1->Fill(mtdiff);
+      tdiff_ph->Fill(pulse_height[0],mtdiff);
 
       tdiff_phase[phase]->Fill(mtdiff);
 
@@ -282,7 +301,7 @@ int main( int argc, char* argv[] ) {
       if(mtdiff > 60 && mtdiff < 340) {success_Fits1++;}
     
 
-    }
+      }
 
     // check injected pulse timing
     double tdiff_i = time1-time17;
@@ -327,7 +346,7 @@ int main( int argc, char* argv[] ) {
   double better_lambda = - log(total_nohits/(double)tt0->GetEntries());
   std::cout << "better lamba: " << better_lambda << std::endl;
   std::cout << "Total number of 1 PE pulses: " << pulseCount2 << std::endl;
-  std::cout << "Test number: " << pulseCount << std::endl;
+  std::cout << "Total number of pulses: " << pulseCount << std::endl;
     
     TCanvas *c = new TCanvas("c");
 
@@ -384,14 +403,17 @@ int main( int argc, char* argv[] ) {
 
   TF1 *gaus2 = new TF1("gaus2","gaus", tdiff1->GetBinCenter(bin1), tdiff1->GetBinCenter(bin2));//45.5,48
   TF1 *fagaus = new TF1("fagaus", fAssymGauss, tdiff1->GetBinCenter(bin1), tdiff1->GetBinCenter(bin2), 4);
+  //double minFit = 91.8, maxFit = 93.7;
+  //TF1 *gaus2 = new TF1("gaus2","gaus", minFit, maxFit);//45.5,48
+  //TF1 *fagaus = new TF1("fagaus", fAssymGauss, minFit, maxFit, 4);
   //  TF1 *fagaus = new TF1("fagaus","gaus",74,75.6);
   gaus2->SetLineWidth(0);  
   tdiff1->Fit("gaus2", "R+");
   //gStyle->SetOptFit(0);
   fagaus->SetParameter(0, gaus2->GetParameter(0));
   fagaus->SetParameter(1, gaus2->GetParameter(1));
-  fagaus->SetParameter(2, gaus2->GetParameter(2));
-  fagaus->SetParameter(3, gaus2->GetParameter(2));
+  fagaus->SetParameter(2, gaus2->GetParameter(2)/2.);
+  fagaus->SetParameter(3, gaus2->GetParameter(2)/2.);
   tdiff1->Fit("fagaus", "R+");
   tdiff1->SetXTitle("time difference (ns)"); 
 
@@ -434,10 +456,21 @@ int main( int argc, char* argv[] ) {
             << end1 << ". FWHM is "
             << fwhm  
             << "ns   !! " << tdiff1->GetRMS() << " "
-            << std::endl << "Pulse height hist peaks at " << x 
+            << std::endl << "Pulse height hist peaks at " << x
+       	<< std::endl << "Total number of one PE pulses : " << pulseCount2 
             << std::endl;
   file1.close();
 
+  std::ofstream stability;
+  stability.open("LaserStability.txt", std::ios::app);
+  stability << x << std::endl;
+  stability.close();
+
+  std::ofstream pulseFile;
+  pulseFile.open("Pulses.txt", std::ios::app);
+  pulseFile << pulseCount2 << std::endl;
+  pulseFile.close();
+  
   std::cout << "mean1 : " << mean1 << " " << hm1 << " " 
             << start1 << " "
             << end1 << ". FWHM is "
@@ -500,6 +533,19 @@ int main( int argc, char* argv[] ) {
   
   c3->SaveAs("pulse_heights_" + TString::Itoa(runNo,10) + "_slice_" + TString::Itoa(input,10) \
 + ".png");
+
+  TCanvas *can = new TCanvas("can");
+  tdiff_ph->GetXaxis()->SetTitle("Pulse Height (PE)");
+  tdiff_ph->GetXaxis()->SetLabelSize(0.04);  
+  tdiff_ph->GetXaxis()->SetTitleSize(0.04);
+  tdiff_ph->GetYaxis()->SetTitle("Transit Time (ns)");
+  tdiff_ph->GetYaxis()->SetLabelSize(0.04);  
+  tdiff_ph->GetYaxis()->SetTitleSize(0.04);
+  tdiff_ph->Draw("colz");
+
+  can->SaveAs("tdiff_vs_ph_" + TString::Itoa(runNo,10) + "_slice_" + TString::Ito\
+a(input,10) \
+	      + ".png");
   
   if(0){
 
