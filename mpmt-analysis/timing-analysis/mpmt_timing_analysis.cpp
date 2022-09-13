@@ -120,7 +120,7 @@ int main( int argc, char* argv[] ) {
   TH1F *tdiff2 = new TH1F("time diff2","timediff2",800,-6,1);
   TH1F *tdiff_inj = new TH1F("time diff inj","time difference injected pulses",200,-9.3,-8.8);
   TH2F *tdiff_ph = new TH2F("tdiff_ph","tdiff vs pulse height",200,0.49,2.8,200,53,62);
-
+  TProfile *tdiff_ph_prof = new TProfile("tdiff_ph_prof", "Mean of tdiff vs pulse height",160,0.000488/0.05685194556*60,0.000488/0.05685194556*220);
 
   TH1F *tdiff00 = new TH1F("time diff00","pmt1 time relative to trigger time",50,325,333);
   TH1F *tdiff01 = new TH1F("time diff01","pmt1 time relative to trigger time",50,325,333);
@@ -146,7 +146,7 @@ int main( int argc, char* argv[] ) {
   TProfile *tdiff_vs_ph_prof = new TProfile("tdiff_vs_ph_prof", "time difference vs pulse height - profile", 20,0,0.000488/0.018);
   
   TH1F *ph[2];
-  ph[0] = new TH1F("ph0","pulse heights",200,0,0.000488/0.05685194556*200);
+  ph[0] = new TH1F("ph0","pulse heights",400,0,0.000488/0.05685194556*400);
   ph[1] = new TH1F("ph1","pulse heights",2000,0,0.000488/0.018*2000);//1 adc count == 0.00048v, 1 adc count == 0.48/0.018 mpe, 0.48 mv == 26 mpe => 1 pe == 18 mv 
   std::cout << "looping tree " << tt0->GetEntries() << " " << tt1->GetEntries() << std::endl;
   int total_hits0 = 0, success_Fits0 = 0;
@@ -154,12 +154,12 @@ int main( int argc, char* argv[] ) {
 
   int total_pe = 0.0;
   int total_nohits = 0.0;
-  int input, slices, runNo;
-  std::cout << "input iteration :";
-  std::cin >> input;
+  int input, slices, runNo;  
   std::cout << "Divide into how many slices? ";
   std::cin >> slices;
-  std::cout << "Enter Run Number ";
+  std::cout << "Slice number: ";
+  std::cin >> input;
+  std::cout << "Enter Run Number: ";
   std::cin >> runNo;
   float pulseCount = 0.;
   float pulseCount2 = 0.;
@@ -201,11 +201,6 @@ int main( int argc, char* argv[] ) {
       }
       //std::cout << wf->numPulses << " ok " << pulses << std::endl;
     }
-    //std::ofstream file3;
-    //file3.open("PulseHeightValues.txt",std::ios::app);
-    //file3 << pulse_height[0] << std::endl;
-    //file3.close();
-    //ph[0]->Fill(pulse_height[0]);
     ph[1]->Fill(pulse_height[1]);
 
     //pulseCount += 1.0;
@@ -267,8 +262,6 @@ int main( int argc, char* argv[] ) {
     }// ch 1 to trigger
 
     ph[0]->Fill(pulse_height[0]);
-    std::ofstream file9;
-    file9.open("TransitTime.txt",std::ios::app);    
     int phase = ((int)(time18-0.5)) % 8 ;
     if(pulse_height[0] < 3.5 && pulse_height[0] > 0.5){
 
@@ -284,9 +277,6 @@ int main( int argc, char* argv[] ) {
 
       //ph[0]->Fill(pulse_height[0]);
       double mtdiff = time0-time1;
-      file9 << mtdiff << std::endl;
-      file9.close();
-      //std::cout << time0 << " Tere MA ka Sakinaka" << mtdiff << std::endl;
       
       //double mtdiff = time1-time18 - extra;
 
@@ -294,6 +284,7 @@ int main( int argc, char* argv[] ) {
       //if(phase != 6)
       tdiff1->Fill(mtdiff);
       tdiff_ph->Fill(pulse_height[0],mtdiff);
+      if (mtdiff <= 62 && mtdiff >= 53) tdiff_ph_prof->Fill(pulse_height[0],mtdiff);
 
       tdiff_phase[phase]->Fill(mtdiff);
 
@@ -350,16 +341,16 @@ int main( int argc, char* argv[] ) {
     
     TCanvas *c = new TCanvas("c");
 
-  tdiff->Draw();
+    //tdiff->Draw();
   //TF1 *gaus = new TF1("gaus","gaus",-5,2);
 
   //tdiff->Fit("gaus","r");
-  tdiff->SetLineColor(2);
+  //tdiff->SetLineColor(2);
   //tdiff2->Draw("same");
   //tdiff->Fit("gaus","r");
-  tdiff->SetXTitle("time difference (ns)"); 
+  //tdiff->SetXTitle("time difference (ns)"); 
 
-  gStyle->SetOptFit(1111);
+  //gStyle->SetOptFit(1111);
 
 
   
@@ -407,17 +398,15 @@ int main( int argc, char* argv[] ) {
   //TF1 *gaus2 = new TF1("gaus2","gaus", minFit, maxFit);//45.5,48
   //TF1 *fagaus = new TF1("fagaus", fAssymGauss, minFit, maxFit, 4);
   //  TF1 *fagaus = new TF1("fagaus","gaus",74,75.6);
-  gaus2->SetLineWidth(0);  
+  gaus2->SetLineWidth(0);
   tdiff1->Fit("gaus2", "R+");
-  //gStyle->SetOptFit(0);
   fagaus->SetParameter(0, gaus2->GetParameter(0));
   fagaus->SetParameter(1, gaus2->GetParameter(1));
   fagaus->SetParameter(2, gaus2->GetParameter(2)/2.);
   fagaus->SetParameter(3, gaus2->GetParameter(2)/2.);
   tdiff1->Fit("fagaus", "R+");
-  tdiff1->SetXTitle("time difference (ns)"); 
-
   gStyle->SetOptFit(1111);
+  tdiff1->SetXTitle("time difference (ns)"); 
 
   double maxX = fagaus->GetMaximumX(tdiff1->GetBinCenter(bin1),tdiff1->GetBinCenter(bin2));
   double max = fagaus->GetMaximum(tdiff1->GetBinCenter(bin1),tdiff1->GetBinCenter(bin2));
@@ -447,27 +436,17 @@ int main( int argc, char* argv[] ) {
     }*/
   
   int binmax = ph[0]->GetMaximumBin();
-  double x = ph[0]->GetXaxis()->GetBinCenter(binmax);
+  double maxPulseHeight = ph[0]->GetXaxis()->GetBinCenter(binmax);
 
-  std::ofstream file1;
-  file1.open("TimingResolutionRecord.txt", std::ios::app);
-  file1 << "Run number : " << TString::Itoa(runNo,10) << " mean1 : " << mean1 << " " << hm1 << " " 
-            << start1 << " "
-            << end1 << ". FWHM is "
-            << fwhm  
-            << "ns   !! " << tdiff1->GetRMS() << " "
-            << std::endl << "Pulse height hist peaks at " << x
-       	<< std::endl << "Total number of one PE pulses : " << pulseCount2 
-            << std::endl;
-  file1.close();
-
-  std::ofstream stability;
-  stability.open("LaserStability.txt", std::ios::app);
-  stability << x << std::endl;
-  stability.close();
+  std::ofstream stabilityFile;
+  if (input == 0) stabilityFile.open("LaserStability_" + TString::Itoa(runNo,10) + ".txt");
+  else stabilityFile.open("LaserStability_" + TString::Itoa(runNo,10) + ".txt", std::ios::app);
+  stabilityFile << maxPulseHeight << std::endl;
+  stabilityFile.close();
 
   std::ofstream pulseFile;
-  pulseFile.open("Pulses.txt", std::ios::app);
+  if (input == 0) pulseFile.open("Pulses_" + TString::Itoa(runNo,10) + ".txt");
+  pulseFile.open("Pulse_" + TString::Itoa(runNo,10) + ".txt", std::ios::app);
   pulseFile << pulseCount2 << std::endl;
   pulseFile.close();
   
@@ -476,16 +455,16 @@ int main( int argc, char* argv[] ) {
             << end1 << ". FWHM is "
             << fwhm  
             << "ns   !! " << tdiff1->GetRMS() << " "
-            << std::endl << "Pulse height hist peaks at " << x 
+            << std::endl << "Pulse height hist peaks at " << maxPulseHeight 
             << std::endl;
 
-  std::ofstream file2;
-  if (input==0) file2.open("TimingData_" + TString::Itoa(runNo,10) + ".txt");
-  else file2.open("TimingData_" + TString::Itoa(runNo,10) + ".txt", std::ios::app);
-  file2 << fwhm << std::endl;
-  file2.close();
+  std::ofstream timeFile;
+  if (input==0) timeFile.open("TimingData_" + TString::Itoa(runNo,10) + ".txt");
+  else timeFile.open("TimingData_" + TString::Itoa(runNo,10) + ".txt", std::ios::app);
+  timeFile << fwhm << std::endl;
+  timeFile.close();
 
-  c2->SaveAs("tdiff_injected1_run_" + TString::Itoa(runNo,10) + "_slice_" + TString::Itoa(input,10) + ".png");
+  c2->SaveAs("tdiff_injected1_" + TString::Itoa(runNo,10) + "_slice_" + TString::Itoa(input,10) + ".png");
 
   if(0){
 
@@ -543,9 +522,23 @@ int main( int argc, char* argv[] ) {
   tdiff_ph->GetYaxis()->SetTitleSize(0.04);
   tdiff_ph->Draw("colz");
 
-  can->SaveAs("tdiff_vs_ph_" + TString::Itoa(runNo,10) + "_slice_" + TString::Ito\
-a(input,10) \
-	      + ".png");
+  can->SaveAs("tdiff_vs_ph_" + TString::Itoa(runNo,10) + "_slice_" + TString::Itoa(input,10) + ".png");
+  TCanvas *can1 = new TCanvas("can1");
+  gStyle->SetTitleXOffset(1.1);
+  gStyle->SetTitleYOffset(100);
+  TF1 *fit1 = new TF1("fit1", "pol1", 0.000488/0.05685194556*60, 1.5); 
+  tdiff_ph_prof->Fit("fit1", "R+");
+  tdiff_ph_prof->GetXaxis()->SetTitle("Pulse Height (PE)");
+  tdiff_ph_prof->GetXaxis()->SetLabelSize(0.04);  
+  tdiff_ph_prof->GetXaxis()->SetTitleSize(0.04);
+  tdiff_ph_prof->GetXaxis()->SetTitleOffset(1.1);
+  tdiff_ph_prof->GetYaxis()->SetTitle("Mean of Transit Time (ns)");
+  tdiff_ph_prof->GetYaxis()->SetLabelSize(0.04);  
+  tdiff_ph_prof->GetYaxis()->SetTitleSize(0.04);
+  tdiff_ph_prof->GetYaxis()->SetTitleOffset(1.2);
+  tdiff_ph_prof->Draw("colz");
+
+  can1->SaveAs("tdiff_vs_ph_prof_" + TString::Itoa(runNo,10) + "_slice_" + TString::Itoa(input,10) + ".png");
   
   if(0){
 
