@@ -1,4 +1,3 @@
-
 #include "PTFAnalysis.hpp"
 #include "Configuration.hpp"
 #include "Utilities.hpp"
@@ -6,7 +5,7 @@
 #include "PulseFinding.hpp"
 #include "TH2D.h"
 #include "BrbSettingsTree.hxx"
-
+#include "TCanvas.h"
 #include <iostream>
 #include <ostream>
 #include <fstream>
@@ -15,7 +14,12 @@
 // Pulse charge calculation (integrated pulse height over bin range {bin_low,bin_high})
 // Optionally arguments: bin_low and bin_high (otherwise checks entire range from 0-8192ns)
 // Note that time in waveform = bin number * 8 ns
+
+double fraction = 0.5, startRise = 0.1, endRise = 0.9;
+TH1F* hist = new TH1F("hist", "", 2000, 900, 1100);
+
 void PTFAnalysis::ChargeSum( float ped, int bin_low, int bin_high ){
+
     if (bin_high==0) bin_high=hwaveform->GetNbinsX();
     fitresult->qped = ped;
     float sum = 0.;
@@ -29,6 +33,12 @@ void PTFAnalysis::ChargeSum( float ped, int bin_low, int bin_high ){
         ped = ped/(bin_low-50);
         fitresult->qped = ped;
     }
+    
+    //float adcNoise = 0.;
+    //for (int i=0; i<50; i++) {
+    //  std::cout << hwaveform->GetBinContent(i) << std::endl;
+    //}
+   
     
     // Pulse charge calculation
     for( int ibin = bin_low; ibin<=bin_high; ibin++ ){
@@ -361,7 +371,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
   //}
   else if( pmt.type == PTF::mPMT_REV0_PMT ){ /// Add a new PMT type for the mPMT analysis.
 
-    // Find the mininum bin between 2040.0ns (bin 255) and  2320.0ns (bin 290)
+    // Find the mininum bin between 2000.0ns (bin 250) and  2560.0ns (bin 320)
     double min_bin = 2400;
     double min_bini = 0;
     double min_value = 1999.0;
@@ -384,8 +394,8 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     // Get baseline from the settings tree
     double sbaseline = BrbSettingsTree::Get()->GetBaseline(pmt.channel);
     
-    // ellipitcall modified gaussian
-    if(pmt.channel >= 16){
+    // ellipitcall modified gaussian for injected pulse
+    if(pmt.channel == 1){
       if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",funcEMG,fit_minx-30,fit_maxx+30,5);
       ffitfunc->SetParameters( fitresult->amp, fitresult->mean, 8.0, 1.0, fitresult->ped );
       ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "exp decay", "Offset" );
@@ -415,19 +425,44 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       //ffitfunc->SetParLimits(3, 0.1, 0.9 );
       //    ffitfunc->SetParLimits(4, 0.99, 1.01 );
       
-      // then fit gaussian
+      // then fit gaussian     
       fitstat = hwaveform->Fit( ffitfunc, "Q", "", fit_minx, fit_maxx);
-
-
+      // code for CFD//
+      double ymax = sbaseline - amplitude;
+      double yend = sbaseline - endRise*amplitude;
+      double ystart = sbaseline - startRise*amplitude;
+      double riseAmplitude = ystart - yend;
+      double endIndex = min_bini, startIndex = min_bini;
+      while(hwaveform->GetBinContent(endIndex)<yend && endIndex>0){
+	endIndex = endIndex-1;
+      }
+      endIndex = endIndex+1;
+      while(hwaveform->GetBinContent(startIndex)<ystart && startIndex>0){
+	startIndex = startIndex-1;
+      }
+      startIndex = startIndex+1;  
+      double xend = (double)hwaveform->GetBinCenter(endIndex);
+      //std::cout << "xend : " << xend << std::endl;
+      double xstart = (double)hwaveform->GetBinCenter(startIndex);
+      //std::cout << "xstart : " << xstart << std::endl;
+      double slope = (yend-ystart)/(xend-xstart);
+      double yIntercept = ystart-xstart*slope;
+      double extractedTime = (ystart-(fraction*riseAmplitude)-yIntercept)/slope;
+      //std::cout << "extractedTime : " << extractedTime << std::endl;
+      //return extractedTime;
+      //double extractedTime = 0.;
+      //extractedTime = ffitfunc->GetX((sbaseline-0.8*amplitude),2040,min_bin);
+      //if(extractedTime>0) fitresult->CFD = extractedTime;
       
     }
 
-    // Bessel fit
-    if(pmt.channel < 16){
+    double noPulse = 0.;
+    // Bessel fit for PMT pulses
+    if(pmt.channel == 0){
 
       fit_minx = min_bin - 8*6.5;
       //fit_maxx = min_bin + 8.0*3.5;
-      fit_maxx = min_bin + 8.0*0.5;
+      fit_maxx = min_bin + 8.0*2.5;
       
 
       if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",bessel,fit_minx-32,fit_maxx+36,5);
@@ -454,7 +489,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       }
       basebase /= 10.0;
       sbaseline = basebase;
-
+      //fitresult->bbaseline = sbaseline;
       double amplitude = sbaseline - min_value;
       //      ffitfunc->SetParameter(0, amplitude*-10.0);
             ffitfunc->SetParameter(2, -5.6* amplitude );
@@ -470,15 +505,48 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
       // then fit gaussian
       int fitstat = hwaveform->Fit( ffitfunc, "Q", "", fit_minx, fit_maxx);
       
-      if(pmt.channel == 1 && 0) std::cout  << "FF " << ffitfunc->GetParameter(0)<< " "
-				     << ffitfunc->GetParameter(1)<< " "
-				     << ffitfunc->GetParameter(2)<< " "
-				     << amplitude << " " 
-				     << ffitfunc->GetParameter(2)/amplitude << " " 
-				     << ffitfunc->GetParameter(3)<< " "
-				     << ffitfunc->GetParameter(4)<< "   |||||"
-				     << std::endl;
-
+      //double extractedTime = 0.;
+      //if(pmt.channel == 0) {
+      /* std::cout  << "FF " << ffitfunc->GetParameter(0)<< " "
+	 << ffitfunc->GetParameter(1)<< " "
+	 << ffitfunc->GetParameter(2)<< " "
+	 << amplitude << " " 
+	 << ffitfunc->GetParameter(2)/amplitude << " " 
+	 << ffitfunc->GetParameter(3)<< " "
+	 << ffitfunc->GetParameter(4)<< "   |||||"
+	 << std::endl;*/
+      // code for CFD //
+      double ymax = sbaseline - amplitude;
+      double yend = sbaseline - endRise*amplitude;
+      double ystart = sbaseline - startRise*amplitude;
+      double riseAmplitude = ystart - yend;
+      double endIndex = min_bini, startIndex = min_bini;
+      while(hwaveform->GetBinContent(endIndex)<yend && endIndex>0){
+	endIndex = endIndex-1;
+      }
+      endIndex = endIndex+1;
+      while(hwaveform->GetBinContent(startIndex)<ystart && startIndex>0){
+	startIndex = startIndex-1;
+      }
+      startIndex = startIndex+1;  
+      double xend = (double)hwaveform->GetBinCenter(endIndex);
+      //std::cout << "xend : " << xend << std::endl;
+      double xstart = (double)hwaveform->GetBinCenter(startIndex);
+      //std::cout << "xstart : " << xstart << std::endl;
+      double slope = (yend-ystart)/(xend-xstart);
+      double yIntercept = ystart-xstart*slope;
+      double extractedTime = (ystart-(fraction*riseAmplitude)-yIntercept)/slope;
+      //std::cout << "extractedTime : " << extractedTime << std::endl;
+      //return extractedTime;
+      //double extractedTime = 0.;
+      //extractedTime = ffitfunc->GetX((sbaseline-0.8*amplitude),2040,min_bin);
+      //if(extractedTime>0) fitresult->CFD = extractedTime;
+      //}
+      if(amplitude<0.3*0.048 || min_bin > 3000 || min_bin < 3000){
+	noPulse = noPulse + 1;
+	//std::cout << noPulse << std::endl;
+      }
+      
     }
     
     if(pmt.channel == 17 && 0)std::cout << "FF " << ffitfunc->GetParameter(0)<< " " 
@@ -519,7 +587,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     // Do CFD analysis on the fitted pulse
     double baseline = ffitfunc->GetParameter(4);
     if(pmt.channel == 0) baseline = 0.991;
-    if(pmt.channel == 1) baseline = 0.9966;
+    if(pmt.channel == 2) baseline = 0.9966;
     double pulse_amplitude = ffitfunc->GetParameter(0) / 3.3;   
     pulse_amplitude = min_value-baseline;
 
@@ -665,9 +733,13 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
     
   // Loop over scan points (index i)
   unsigned long long nfilled = 0;// number of TTree entries so far
+  //int input;
+  //std::cout << "Run number: ";
+  //std::cin >> input;
 
+  float adcRMS[499];
   for (unsigned i = 2; i < wrapper.getNumEntries(); i++) {
-    //if ( i>2000 ) continue;
+   //if ( i>150000 ) break;
     if( terminal_output ){
       cerr << "PTFAnalysis scan point " << i << " / " << wrapper.getNumEntries() << "\u001b[34;1m (" << (((double)i)/wrapper.getNumEntries()*100) << "%)\u001b[0m\033[K";
       cerr << "\r";
@@ -724,17 +796,19 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
         
       // For main PMT do FFT and check if there is a waveform
       // If a waveform present then fit it
-      if( dofit && pulse_location_cut && pmt.pmt == 0 ) dofit = PulseLocationCut(10);
-      if( dofit && fft_cut && pmt.pmt == 0 ) dofit = FFTCut();
-      //if( dofit && pmt.pmt == 1 ) dofit = MonitorCut( 25. );
-      if( dofit ){
-        FitWaveform( j, numWaveforms, pmt ); // Fit waveform and copy fit results into TTree
-      }
-      fitresult->haswf = utils.HasWaveform( fitresult, pmt.pmt );
-      ptf_tree->Fill();
-      if(0)std::cout << "Check save waveform: " << save_waveforms << " " << savewf_count
-<< " " << savenowf_count << " " << curscanpoint.x() << std::endl; 
-      // check if we should clone waveform histograms
+	if( dofit && pulse_location_cut && pmt.pmt == 0 ) dofit = PulseLocationCut(10);
+	if( dofit && fft_cut && pmt.pmt == 0 ) dofit = FFTCut();
+	//if( dofit && pmt.pmt == 1 ) dofit = MonitorCut( 25. );
+	if( dofit ){
+	  FitWaveform( j, numWaveforms, pmt ); // Fit waveform and copy fit results into TTree
+	}
+	fitresult->haswf = utils.HasWaveform( fitresult, pmt.pmt );
+	ptf_tree->Fill();
+	if(0)std::cout << "Check save waveform: " << save_waveforms << " " << savewf_count
+		       << " " << savenowf_count << " " << curscanpoint.x() << std::endl; 
+	// check if we should clone waveform histograms
+	//std::ofstream file1;
+	//file1.open("adcNoise" + TString::Itoa(input,10) + ".txt", std::ios::app);
       if ( save_waveforms && savewf_count<500 && savenowf_count<500 ){
 	    if  ( fabs( curscanpoint.x() - 0.46 ) < 0.0005 && 
 	      fabs( curscanpoint.y() - 0.38 ) < 0.0005 ) {
@@ -746,7 +820,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
             TH1D* hwf = (TH1D*) hwaveform->Clone( hwfname.c_str() );
             hwf->SetName( hwfname.c_str() );
             hwf->SetTitle("HAS a pulse; Time (ns); Voltage (V)");
-            hwf->SetDirectory( wfdir );
+            hwf->SetDirectory( wfdir );                         
             wfdir_fft->cd();
             TH1D* hfftm_tmp = (TH1D*) hfftm->Clone( hfftmname.c_str() );
             hfftm_tmp->SetName( hfftmname.c_str() );
@@ -755,10 +829,33 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
             ++savewf_count;	  
           } else if ( !fitresult->haswf && savenowf_count<1000 ){
             nowfdir->cd();
+
+	    TH1::AddDirectory(false);
             TH1D* hwf = (TH1D*) hwaveform->Clone( hwfname.c_str() );
             hwf->SetName( hwfname.c_str() );
             hwf->SetTitle("Noise pulse; Time (ns); Voltage (V)");
             hwf->SetDirectory( nowfdir );
+
+	    for (int i = 0; i < 50; i++) {
+	      hist->Fill(hwf->GetBinContent(i)*1000);
+	      //std::cout << hwf->GetBinContent(i) << std::endl;
+	      //std::cout << hwf->GetBinContent(i)*1000 << std::endl;
+	    }
+	    //file1 << hist->GetRMS() << std::endl;
+	    adcRMS[i-2] = hist->GetRMS();
+	    TCanvas *can = new TCanvas("can");
+	    hist->GetXaxis()->SetTitle("Pulse Height (PE)");
+	    hist->GetXaxis()->SetLabelSize(0.04);
+	    hist->GetXaxis()->SetTitleSize(0.04);
+	    hist->GetYaxis()->SetTitle("Transit Time (ns)");
+	    hist->GetYaxis()->SetLabelSize(0.04);
+	    hist->GetYaxis()->SetTitleSize(0.04);
+	    hist->Draw("colz");
+	    can->SaveAs("hist" + TString::Itoa(i,10) + ".png");
+	    hist->Reset("ICESM");
+	    //file1.close();
+	    //std::cout << adcNoise << std::endl;
+	    //fitresult->adcNoise = adcNoise;
             nowfdir_fft->cd();
             TH1D* hfftm_tmp = (TH1D*) hfftm->Clone( hfftmname.c_str() );
             hfftm_tmp->SetName( hfftmname.c_str() );
@@ -777,6 +874,26 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
       ++nfilled;
     }
   }
+
+  /*
+  std::ifstream file2;
+  file2.open("adcNoise" + TString::Itoa(input,10) + ".txt");
+  float mean = 0.;
+  float output = 0.;
+  for (int i = 0; i < 999; i++) {
+    file2 >> output;
+    if (i >= 500) mean += output;
+  }
+  float mean2 = 0.;
+  for (int i = 0; i < 499; i++) {
+    mean2 += adcRMS[i];
+    std::cout << adcRMS[i] << std::endl;
+  }
+  mean = mean/499.0;
+  mean2 = mean2/499.0;
+  std::cout << "ADC Noise is: " << mean <<  "       " << std::endl;
+  std::cout << "ADC Noise is: " << mean2 <<  "       " << std::endl;
+  */
   //cout << endl;
   // Done.
 }
@@ -831,4 +948,3 @@ const std::vector< double > PTFAnalysis::get_bins( char dim ){
 
   return bins;
 }
- 
