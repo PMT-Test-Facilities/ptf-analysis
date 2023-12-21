@@ -701,32 +701,27 @@ void plot1D( TCanvas *c,bool plotting_on,TH1F *hist,char *title,char *name){
 // Vector to hold the value of the means for a group of runs for a particular channel 
 std::vector<double> meansVector;
 
-// Vector to hold the value of the run that has 0 change in the hamamatsu value 
+// Vector to hold the value of the run that has -50 change in the hamamatsu value 
 std::vector<double> graphVector1;
 
-// Vector to hold the value of the run that has 0 change in the hamamatsu value 
+// Vector to hold the value of the run that has -25 change in the hamamatsu value 
 std::vector<double> graphVector2;
 
 // Vector to hold the value of the run that has 0 change in the hamamatsu value 
 std::vector<double> graphVector3;
 
-// Vector to hold the value of the run that has 0 change in the hamamatsu value 
+// Vector to hold the value of the run that has 25 change in the hamamatsu value 
 std::vector<double> graphVector4;
 
-// Vector to hold the value of the run that has 0 change in the hamamatsu value 
+// Vector to hold the value of the run that has 50 change in the hamamatsu value 
 std::vector<double> graphVector5;
-
-// Vector to hold the value of the run that has 25 change in the hamamatsu value 
-std::vector<double> Vector;
 
 // The array hold the values that are put in the Json file
 nlohmann::json jsonArray;
 
-double gain=0;
+double gain = 0;
 
 int rightBounds = 0;
-
-
 
 // Function that will create a fit to find the right boundaries to use on the final fit
 void fitBounds(TH1F *hist, TF1 *fitFunction, double &xLower, double &xUpper, int rightBounds) {
@@ -790,22 +785,19 @@ void processWaveform(TTree *tree, WaveformFitResult *waveformResult, TH1F *hist,
     for (int i = 0; i < tree->GetEntries() - 1; i++) {
         tree->GetEvent(i);
         //waveformResult->numPulses;
-
         for (int k = 0; k < waveformResult->numPulses; k++) {
             if(run_num == 1247 || run_num == 3){
-            if (waveformResult->pulseTimes[k] > 0 and waveformResult->pulseTimes[k] < 400 and waveformResult->pulseCharges[k] * 1000.0 > 20.0) {
-                hist->Fill(waveformResult->pulseCharges[k] * 1000.0);
-                // FILTER PULSE TIME
-            }
+              if (waveformResult->pulseTimes[k] > 0 and waveformResult->pulseTimes[k] < 400 and waveformResult->pulseCharges[k] * 1000.0 > 20.0) {
+                  hist->Fill(waveformResult->pulseCharges[k] * 1000.0);
+                  // FILTER PULSE TIME
+              }
             }
             else{
-            if (waveformResult->pulseTimes[k] > 0 and waveformResult->pulseTimes[k] < 400 and waveformResult->pulseCharges[k] * 1000.0 > 12.0) {
-                hist->Fill(waveformResult->pulseCharges[k] * 1000.0);
-                // FILTER PULSE TIME
-            }}
-
-
-
+              if (waveformResult->pulseTimes[k] > 0 and waveformResult->pulseTimes[k] < 400 and waveformResult->pulseCharges[k] * 1000.0 > 12.0) {
+                  hist->Fill(waveformResult->pulseCharges[k] * 1000.0);
+                  // FILTER PULSE TIME
+              }
+            }
         }
     }
 }
@@ -832,7 +824,7 @@ ChannelParameters processChannel(TFile *file, int ch_name, int run_num, int grap
     //This sets the title of the graph, the number of bins in the histogram and the size of the x axis 
     TH1F *hist = new TH1F(Form("h_p_sum_all_CH%d_Run%d", ch_name, run_num),
                           Form("All Pulse Heights for CH %d Run %d", ch_name, run_num),
-                          350, 0, rightBounds/* * 0.48828125*/); 
+                          200, 0, rightBounds/* * 0.48828125*/); 
  
     processWaveform(tree, wfResult, hist, run_num);
 
@@ -915,7 +907,7 @@ void graphMeans(const std::vector<double>& y, int ch_name, int num_ch, nlohmann:
   scatterPlot->Fit(quadraticFitFunction);
 
   //This is the target mean after gain equalisation
-  double targetY = 39.82;
+  double targetY = 38.2666;
   double b = quadraticFitFunction->GetParameter(0);
   double m = quadraticFitFunction->GetParameter(1);
 
@@ -1057,7 +1049,7 @@ void createJson(const ChannelParameters& params, int ch_name, int run_num, doubl
 
     std::ofstream jsonFile(Form("data_Run_%d.json", run_num));
 
-// Save the JSON data to a file
+    // Save the JSON data to a file
     //std::ofstream jsonFile("data.json");
     jsonFile << jsonArray;
     jsonFile.close();
@@ -1065,17 +1057,17 @@ void createJson(const ChannelParameters& params, int ch_name, int run_num, doubl
 }
 
 int main( int argc, char* argv[], double gain , int rightBounds) {//START MAIN 
- /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
- //Uncomment this section for an anlysis of a group of runs
- /*
+
+  rightBounds = 100; // This is the size of the x axis of the pulse height graphs
 
   //Read ROOT file;
-  if ( argc != 6 ){
-    std::cerr<<"Usage: ptf_ttree_analysis.app ptf_analysis.root\n"; //If there are not 6 arguments given this error will be printed and the program will stop
+  if ( argc != 2 && argc != 6){
+    std::cerr<<"Usage: ptf_ttree_analysis.app ptf_analysis.root\n"; //If there are not 6 or 2 arguments given this error will be printed and the program will stop
     exit(0); }
-  
-  int num_ch = 19; //number of active channels
-  int f_ch = 0; //first channel
+
+  else if (argc == 6){ // This section for an anlysis of a group of runs
+  int num_ch = 19; // Number of active channels
+  int f_ch = 0; // First channel
 
   int run_num  = extractIntFromArgv(argv, 1); //Uses argument 1 to find the run number 
   int run_num2 = extractIntFromArgv(argv, 2); //Uses argument 2 to find the run number 
@@ -1087,7 +1079,7 @@ int main( int argc, char* argv[], double gain , int rightBounds) {//START MAIN
   //double onePE_p[num_ch];
 
   //Define place to store mean pulse heights for all channels
- // double mph_arr[14];
+  // double mph_arr[14];
   TH1F *hist_all[19];
   THStack * hs = new THStack("hs"," stacked");
 
@@ -1127,12 +1119,10 @@ int main( int argc, char* argv[], double gain , int rightBounds) {//START MAIN
   TLegend *leg = new TLegend(0.6,0.5,0.7,0.8);
   
   for (int i=0; i<18; i++){
-
     hist_all[i]->SetLineColor(20+i);
     hs->Add(hist_all[i]);
     //hist_all[i]->Draw("hist same");
     leg->AddEntry(hist_all[i], Form("Ch. %i",i));
-
   }
 
   hs->Draw("nostack");
@@ -1146,21 +1136,17 @@ int main( int argc, char* argv[], double gain , int rightBounds) {//START MAIN
   meanDistribution(graphVector3, num_ch, run_num3); // Graph the means from each run for the channel
   meanDistribution(graphVector4, num_ch, run_num4); // Graph the means from each run for the channel
   meanDistribution(graphVector5, num_ch, run_num5); // Graph the means from each run for the channel
-  
-  ///////////////////////////////////////////////////////////////////////////////////////////////////
-  
+}
 
-*/
-  /////////////////////////////////////////////////////////////////////////////////////////////////// For just one graph
-  //Uncomment this section to analyse one run
-  std::cout << "RIGHT BOUND !!!!!!!!!!!!!!!!!!1 " << rightBounds << std::endl;
+else if (argc == 2){
+
   rightBounds = 100;
   //Read ROOT file;
-  if ( argc != 2 ){
+  if ( argc != 2 ){ // This section to analyse one run
     std::cerr<<"Usage: ptf_ttree_analysis.app ptf_analysis.root\n"; //If there are not 6 arguments given this error will be printed and the program will stop
     exit(0); }
   
-  int num_ch = 19; //number of active channels
+  int num_ch = 8; //number of active channels
   int f_ch = 0; //first channel
 
   int run_num  = extractIntFromArgv(argv, 1); //Uses argument 1 to find the run number 
@@ -1170,22 +1156,18 @@ int main( int argc, char* argv[], double gain , int rightBounds) {//START MAIN
 
   TFile * fin  = new TFile( argv[1], "read" );
 
-for (int ch=0;ch<num_ch;ch++) {//START CHANNEL LOOP
+  for (int ch=0;ch<num_ch;ch++) {//START CHANNEL LOOP
     int ch_name = ch + f_ch;
 
     ChannelParameters graph1 = processChannel(fin , ch_name, run_num, 1, hist_all, rightBounds); //This will create the graph the first run
-    createJson(graph1, ch_name, run_num, gain);
+    //createJson(graph1, ch_name, run_num, gain);
 
-    if (ch!=17){
+    if (ch!=20){ //Skips a channel if needed
       std::cout << "Length of the vector: " << ch << std::endl;
-
       graphVector1.push_back(meansVector[0]); // This adds the means of the fifth graph to a vector so it can be graphed in the function meanDistribution
     }
-    //graphMeans(meansVector, ch_name, num_ch, jsonArray); // Graph the means from each run for the channel
-
 
     meansVector.clear(); // This will clear the vector so we can use it for the next channel
-
 
     }//END CHANNEL LOOP 
 
@@ -1193,25 +1175,19 @@ for (int ch=0;ch<num_ch;ch++) {//START CHANNEL LOOP
 
   TLegend *leg = new TLegend(0.6,0.5,0.7,0.8);
   
-  for (int i=0; i<18; i++){
-
+  for (int i=0; i<num_ch-1; i++){
     hist_all[i]->SetLineColor(20+i);
     hs->Add(hist_all[i]);
     //hist_all[i]->Draw("hist same");
     leg->AddEntry(hist_all[i], Form("Ch. %i",i));
-
   }
 
   hs->Draw("nostack");
   leg->Draw();
   c->SaveAs("Pulse_Height_All_Channels.png");
 
-
   meanDistribution(graphVector1, num_ch, run_num); // Graph the means from each run for the channel
-
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+}
 
   /*---------------------------------------------------------------------------------*/
   /* IF EVERYTHING BREAKS BRING THIS BACK!!!!!!!!!!!!!!!!!!!!!!!!!!!1
@@ -1437,7 +1413,3 @@ int main( int argc, char* argv[] )
 */
 
 }//DONE MAIN
-
-
-
-

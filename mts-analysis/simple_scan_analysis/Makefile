@@ -13,20 +13,18 @@ VPATH = $(SRCDIR)
 CFLAGS=-c -g -Wall `root-config --cflags` -I${INCDIR}
 LDFLAGS=`root-config --glibs` -lHistPainter -lMinuit -L${ROOTSYS}/lib 
 
-all: mts_simple_scan_analysis.exe mts_simple_analysis.exe
 
+all: mts_simple_analysis.exe
 
-mts_simple_scan_analysis.exe:  mts_simple_scan_analysis.o WaveformFitResult.o
-	CPATH=/usr/local/include $(CXX) $^ -o $@ $(LDFLAGS)
 
 mts_simple_analysis.exe:  mts_simple_analysis.o WaveformFitResult.o
-	CPATH=/usr/local/include $(CXX) $^ -o $@ $(LDFLAGS)	
+	CPATH=/usr/local/include $(CXX) $^ -o $@ $(LDFLAGS)
 
-mts_simple_scan_analysis.o: mts_simple_scan_analysis.cpp
-	$(CXX) $(CFLAGS) $< -o $@
+
 
 mts_simple_analysis.o: mts_simple_analysis.cpp
 	$(CXX) $(CFLAGS) $< -o $@
+
 
 
 WaveformFitResult.o: ${SRCDIR}/WaveformFitResult.cpp
