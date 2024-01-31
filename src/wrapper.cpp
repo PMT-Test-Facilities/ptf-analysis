@@ -28,6 +28,7 @@ Wrapper::Wrapper(unsigned long long maxSamples, unsigned long long sampleSize, c
     GantrySet* gSet = new GantrySet();
     gSet->gantry = gantry;
     gantryData[gantry] = gSet;
+    std::cout << "Adding gantries " << std::endl;
   }
   digiData.model = digi;
   switch( digi ) {
@@ -375,8 +376,11 @@ void Wrapper::setCurrentEntry(unsigned long long entry) {
     throw new Exceptions::EntryOutOfRange();
   }
 
+  //  std::cout << "Here?" << std::endl;
   this->tree->GetEntry(entry);
   this->entry = entry;
+  //std::cout << "Or here?" << std::endl;
+  //std::cout << "samples " << numSamples << std::endl;
 }
 
 
