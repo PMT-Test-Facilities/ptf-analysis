@@ -233,6 +233,8 @@ public:
 
   Digitizer getDigitizerSettings() const {return digiData;}
 
+  TFile* GetFile(){return file;}
+
 private:
   TFile* file{0};
   TTree* tree{0};

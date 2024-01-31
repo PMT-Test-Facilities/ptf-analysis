@@ -82,6 +82,7 @@ int main(int argc, char** argv) {
   TFile * outFile = new TFile(outname.c_str(), "NEW");
   //TFile * outFile = new TFile("ptf_analysis.root", "NEW");
 
+
   std::cout << "Config file: " << string(argv[3]) << std::endl;
   Configuration config;
   config.Load(argv[3]);
@@ -130,6 +131,19 @@ int main(int argc, char** argv) {
   wrapper.openFile( string(argv[1]), "scan_tree");
   cerr << "Num entries: " << wrapper.getNumEntries() << endl << endl;
   cout << "Points ready " << endl;
+
+  // copy settings tree from old ROOT file to new ROOT file
+  if(1){
+    TTree *settings_tree = (TTree*)wrapper.GetFile()->Get("settings_tree");
+    std::cout << "Trying to copy settings tree" << std::endl;
+    if(settings_tree){
+      outFile->cd();
+      settings_tree->CloneTree()->Write();
+      std::cout << "Settings tree copied" << std::endl;
+    }else{
+      std::cout << "No settings tree" << std::endl; 
+    }
+  }
 
   // Open the BRB Settings tree 
   wrapper.LoadBrbSettingsTree();
