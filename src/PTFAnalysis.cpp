@@ -385,7 +385,7 @@ void PTFAnalysis::FitWaveform( int wavenum, int nwaves, PTF::PMT pmt) {
     double sbaseline = BrbSettingsTree::Get()->GetBaseline(pmt.channel);
     
     // ellipitcall modified gaussian
-    if(pmt.channel >= 16){
+    if(pmt.channel <= 16){
       if( ffitfunc == nullptr ) ffitfunc = new TF1("mygauss",funcEMG,fit_minx-30,fit_maxx+30,5);
       ffitfunc->SetParameters( fitresult->amp, fitresult->mean, 8.0, 1.0, fitresult->ped );
       ffitfunc->SetParNames( "Amplitude", "Mean", "Sigma", "exp decay", "Offset" );
@@ -636,7 +636,7 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
   // get length of waveforms
   wrapper.setCurrentEntry(0);
   int  numTimeBins= wrapper.getSampleLength();
-  
+
   // build the waveform histogram
   std::string hname = "hwaveform" + std::to_string(instance_count);
   std::string hname_fft = "hfftm" + std::to_string(instance_count);
@@ -661,12 +661,14 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
   string nowfdir_fft_name = "FFT" + std::to_string(pmt.pmt) + "_NoWaveforms";
   if ( save_waveforms && wfdir_fft==nullptr ) wfdir_fft = outfile->mkdir(wfdir_fft_name.c_str());
   if ( save_waveforms && nowfdir_fft==nullptr ) nowfdir_fft = outfile->mkdir(nowfdir_fft_name.c_str());
+
   outfile->cd();
-    
+
   // Loop over scan points (index i)
   unsigned long long nfilled = 0;// number of TTree entries so far
-
+  std::cout << wrapper.getNumEntries() << std::endl;
   for (unsigned i = 2; i < wrapper.getNumEntries(); i++) {
+    //std::cout << i << std::endl;
     //if ( i>2000 ) continue;
     if( terminal_output ){
       cerr << "PTFAnalysis scan point " << i << " / " << wrapper.getNumEntries() << "\u001b[34;1m (" << (((double)i)/wrapper.getNumEntries()*100) << "%)\u001b[0m\033[K";
@@ -678,19 +680,30 @@ PTFAnalysis::PTFAnalysis( TFile* outfile, Wrapper & wrapper, double errorbar, PT
       }
     }
     wrapper.setCurrentEntry(i);
-    
+
+    //std::cout << "FFF: " << std::endl;    
     auto location = wrapper.getDataForCurrentEntry(PTF::Gantry1);
+    //std::cout << "FFF: " << std::endl;    
     auto T=wrapper.getReadingTemperature();
+    //std::cout << "FFF: " << std::endl;    
     auto time_F=wrapper.getReadingTime();
     scanpoints.push_back( ScanPoint( location.x, location.y, location.z,time_F.time_c, T.ext_2, nfilled ) );
     
     ScanPoint& curscanpoint = scanpoints[ scanpoints.size()-1 ];
     // loop over the number of waveforms at this ScanPoint (index j)
     int numWaveforms = wrapper.getNumSamples();
+
     for ( int j=0; j<numWaveforms; j++) {
       //if( j>20 ) continue;
       double* pmtsample=wrapper.getPmtSample( pmt.pmt, j );
       // set the contents of the histogram
+
+      if(0)std::cout << "Waveform: " << pmtsample[0] << " " 
+		<< pmtsample[1] << " " 
+		<< pmtsample[2] << " " 
+		<< pmtsample[3] << " " 
+		<< pmtsample[4] << " " 
+		<< pmtsample[5] << std::endl;
       hwaveform->Reset();
       for ( int ibin=1; ibin <= numTimeBins; ++ibin ){
         hwaveform->SetBinContent( ibin, pmtsample[ibin-1] );

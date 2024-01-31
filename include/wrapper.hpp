@@ -21,7 +21,8 @@
 
 #include "config.hpp"
 
-#define nPoints_max 6000 
+//#define nPoints_max 6000 
+#define nPoints_max 20000 
 
 /// Classes to to help with reading in PTF data
 /// PTF::PmtChannel           holds pmt number and channel number

@@ -1,4 +1,3 @@
-
 #include "BrbSettingsTree.hxx"
 
 BrbSettingsTree* BrbSettingsTree::singleton_= nullptr;;
